@@ -1,5 +1,5 @@
 (ns chess.core
-  "A collection of pure functions for the game Tic-Tac-Toe."
+  "A collection of pure functions for the game Chess."
   (:use [clojure.test :only (is run-tests function?)]
         [clojure.repl :only (doc)]
         [clojure.pprint :only [pprint]]
