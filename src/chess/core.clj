@@ -9,7 +9,7 @@
 (defn
   ^{:test (fn []
             (is= (add 3 4) 9))}
-  add [x y]
+  move-on-board [x y]
   (+ 2 x y))
 
 
