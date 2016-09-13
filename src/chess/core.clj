@@ -6,11 +6,6 @@
         [test.core :only [is=]])
   (:require [chess.state :as s]))
 
-(defn
-  ^{:test (fn []
-            (is= (add 3 4) 9))}
-  move-on-board [x y]
-  (+ 2 x y))
 
 
 
