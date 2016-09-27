@@ -8,7 +8,8 @@
 
 
 (defn-
-  ^{:test (fn []
+  ^{:doc  "Constructs a piece given a letter. Small letter for the black player."
+    :test (fn []
             (is= (letter->value "b") {:piece :bishop :owner :black})
             (is= (letter->value "p") {:piece :pawn :owner :black})
             (is= (letter->value "K") {:piece :king :owner :white})
@@ -21,12 +22,12 @@
   (if (= letter ".")
     nil
     {:piece (condp = (lower-case letter)
-              "b" :bishop
-              "n" :knight
-              "k" :king
-              "p" :pawn
-              "q" :queen
-              "r" :rook)
+              "b" :bishop                                   ; löpare
+              "n" :knight                                   ; häst eller springare
+              "k" :king                                     ; kung
+              "p" :pawn                                     ; bonde
+              "q" :queen                                    ; drottning
+              "r" :rook)                                    ; torn
      :owner (if (= letter (lower-case letter))
               :black
               :white)}))
@@ -81,12 +82,110 @@
                {})))
 
 
+(defn
+  ^{:doc  "..."
+    :test (fn []
+            (is= (get-piece (create-board "..K") [0 0]) nil)
+            (is= (get-piece (create-board "..K") [0 2]) {:piece :king
+                                                         :owner :white}))}
+  get-piece [board position]
+  (get board position))
 
-(def a [1 2 3 4])
 
-(map inc (filter even? (map (fn [v] (* 3 v)) a)))
+(defn
+  ^{:doc  "..."
+    :test (fn []
+            (is= (-> (create-board "..K")
+                     (mark [0 0] {:piece :queen
+                                  :owner :white}))
+                 (create-board "Q.K")))}
+  mark [board position piece]
+  (assoc board position piece))
 
-(->> [1 2 3 4]
-     (map (fn [v] (* 3 v)))
-     (filter even?)
-     (map inc))
+
+(defn
+  ^{:doc  "..."
+    :test (fn []
+            (is= (-> (create-board "..QK")
+                     (unmark [0 2]))
+                 (create-board "...K")))}
+  unmark [board position]
+  (assoc board position nil))
+
+(defn
+  ^{:doc  "..."
+    :test (fn []
+            (is= (-> (create-board "K..")
+                     (move [0 0] [0 2]))
+                 (create-board "..K"))
+            (is= (-> (create-board "K.q")
+                     (move [0 0] [0 2]))
+                 (create-board "..K")))}
+  move [board from-position to-position]
+  (let [piece (get-piece board from-position)]
+    (-> board
+        (unmark from-position)
+        (mark to-position piece))))
+
+(defn
+  ^{:test (fn []
+            (is (knight? {:piece :knight}))
+            (is (not (knight? {:piece :king}))))}
+  knight? [piece]
+  (= (:piece piece) :knight))
+
+(defn
+  ^{:doc  "..."
+    :test (fn []
+            (let [board (create-board ".K")]
+              (is (on-board? board [0 0]))
+              (is (on-board? board [0 1]))
+              (is (not (on-board? board [0 -1])))))}
+  on-board? [board position]
+  (contains? board position))
+
+
+(defn
+  ^{:test (fn []
+            (is= (get-owner {:owner :black})
+                 :black))}
+  get-owner [piece]
+  {:pre [(contains? piece :owner)]}
+  (:owner piece))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
