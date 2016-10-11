@@ -4,7 +4,7 @@
         [clojure.repl :only (doc)]
         [clojure.string :only [lower-case]]
         [clojure.pprint :only [pprint]]
-        [test.core :only [is=]]))
+        [test.core :only [is= is-not]]))
 
 
 (defn-
@@ -135,6 +135,27 @@
   (= (:piece piece) :knight))
 
 (defn
+  ^{:test (fn []
+            (is (queen? {:piece :queen}))
+            (is (not (queen? {:piece :king}))))}
+  queen? [piece]
+  (= (:piece piece) :queen))
+
+(defn
+  ^{:test (fn []
+            (is (rook? {:piece :rook}))
+            (is (not (rook? {:piece :king}))))}
+  rook? [piece]
+  (= (:piece piece) :rook))
+
+(defn
+  ^{:test (fn []
+            (is (bishop? {:piece :bishop}))
+            (is (not (bishop? {:piece :king}))))}
+  bishop? [piece]
+  (= (:piece piece) :bishop))
+
+(defn
   ^{:doc  "..."
     :test (fn []
             (let [board (create-board ".K")]
@@ -147,11 +168,21 @@
 
 (defn
   ^{:test (fn []
-            (is= (get-owner {:owner :black})
-                 :black))}
-  get-owner [piece]
-  {:pre [(contains? piece :owner)]}
-  (:owner piece))
+            (is= (get-owner (create-board "..K") [0 2]) :white)
+            (is= (get-owner (create-board "..K") [0 0]) nil)
+            (is= (get-owner {:owner :black}) :black))}
+  get-owner
+  ([board position]
+   (get-owner (get-piece board position)))
+  ([piece]
+   (:owner piece)))
+
+(defn
+  ^{:test (fn []
+            (is (marked? (create-board ".K") [0 1]))
+            (is-not (marked? (create-board ".K") [0 0])))}
+  marked? [board position]
+  (not (nil? (get-piece board position))))
 
 
 
