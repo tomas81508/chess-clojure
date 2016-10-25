@@ -10,18 +10,18 @@
 (defn-
   ^{:doc  "Constructs a piece given a letter. Small letter for the black player."
     :test (fn []
-            (is= (letter->value "b") {:piece :bishop :owner :black})
-            (is= (letter->value "p") {:piece :pawn :owner :black})
-            (is= (letter->value "K") {:piece :king :owner :white})
-            (is= (letter->value "Q") {:piece :queen :owner :white})
-            (is= (letter->value "r") {:piece :rook :owner :black})
-            (is= (letter->value "n") {:piece :knight :owner :black})
+            (is= (letter->value "b") {:type :bishop :owner :black})
+            (is= (letter->value "p") {:type :pawn :owner :black})
+            (is= (letter->value "K") {:type :king :owner :white})
+            (is= (letter->value "Q") {:type :queen :owner :white})
+            (is= (letter->value "r") {:type :rook :owner :black})
+            (is= (letter->value "n") {:type :knight :owner :black})
             (is= (letter->value ".") nil)
             (is (thrown? Exception (letter->value "x"))))}
   letter->value [letter]
   (if (= letter ".")
     nil
-    {:piece (condp = (lower-case letter)
+    {:type (condp = (lower-case letter)
               "b" :bishop                                   ; löpare
               "n" :knight                                   ; häst eller springare
               "k" :king                                     ; kung
@@ -38,21 +38,21 @@
     :test (fn []
             (is= (create-board ".pn")
                  {[0 0] nil
-                  [0 1] {:piece :pawn
+                  [0 1] {:type :pawn
                          :owner :black}
-                  [0 2] {:piece :knight
+                  [0 2] {:type :knight
                          :owner :black}})
             (is= (create-board "..kq.r"
                                "......"
                                ".BKQ..")
                  {[0 0] nil
                   [0 1] nil
-                  [0 2] {:piece :king
+                  [0 2] {:type :king
                          :owner :black}
-                  [0 3] {:piece :queen
+                  [0 3] {:type :queen
                          :owner :black}
                   [0 4] nil
-                  [0 5] {:piece :rook
+                  [0 5] {:type :rook
                          :owner :black}
                   [1 0] nil
                   [1 1] nil
@@ -61,11 +61,11 @@
                   [1 4] nil
                   [1 5] nil
                   [2 0] nil
-                  [2 1] {:piece :bishop
+                  [2 1] {:type :bishop
                          :owner :white}
-                  [2 2] {:piece :king
+                  [2 2] {:type :king
                          :owner :white}
-                  [2 3] {:piece :queen
+                  [2 3] {:type :queen
                          :owner :white}
                   [2 4] nil
                   [2 5] nil}))}
@@ -83,10 +83,36 @@
 
 
 (defn
+  ^{:doc  "Creates a state."
+    :test (fn []
+            (is= (create-state ".pn")
+                 {:board {[0 0] nil
+                          [0 1] {:type :pawn :owner :black}
+                          [0 2] {:type :knight :owner :black}}
+                  :players [{:id :white :direction [-1 0]}
+                            {:id :black :direction [1 0]}]
+                  :player-in-turn :white}))}
+  create-state [& strings]
+  {:board (apply create-board strings)
+   :players [{:id :white :direction [-1 0]}
+             {:id :black :direction [1 0]}]
+   :player-in-turn :white})
+
+(defn
+  ^{:test (fn []
+            (is= (get-direction (create-state ".qQ") :white) [-1 0]))}
+  get-direction [state player-id]
+  (->> (:players state)
+       (filter (fn [p] (= (:id p) player-id)))
+       (first)
+       (:direction)))
+
+
+(defn
   ^{:doc  "..."
     :test (fn []
             (is= (get-piece (create-board "..K") [0 0]) nil)
-            (is= (get-piece (create-board "..K") [0 2]) {:piece :king
+            (is= (get-piece (create-board "..K") [0 2]) {:type :king
                                                          :owner :white}))}
   get-piece [board position]
   (get board position))
@@ -96,7 +122,7 @@
   ^{:doc  "..."
     :test (fn []
             (is= (-> (create-board "..K")
-                     (mark [0 0] {:piece :queen
+                     (mark [0 0] {:type :queen
                                   :owner :white}))
                  (create-board "Q.K")))}
   mark [board position piece]
@@ -129,31 +155,38 @@
 
 (defn
   ^{:test (fn []
-            (is (knight? {:piece :knight}))
-            (is (not (knight? {:piece :king}))))}
-  knight? [piece]
-  (= (:piece piece) :knight))
-
-(defn
-  ^{:test (fn []
-            (is (queen? {:piece :queen}))
-            (is (not (queen? {:piece :king}))))}
-  queen? [piece]
-  (= (:piece piece) :queen))
-
-(defn
-  ^{:test (fn []
-            (is (rook? {:piece :rook}))
-            (is (not (rook? {:piece :king}))))}
-  rook? [piece]
-  (= (:piece piece) :rook))
-
-(defn
-  ^{:test (fn []
-            (is (bishop? {:piece :bishop}))
-            (is (not (bishop? {:piece :king}))))}
+            (is (bishop? {:type :bishop}))
+            (is-not (bishop? {:type :king})))}
   bishop? [piece]
-  (= (:piece piece) :bishop))
+  (= (:type piece) :bishop))
+
+(defn
+  ^{:test (fn []
+            (is (knight? {:type :knight}))
+            (is-not (knight? {:type :king})))}
+  knight? [piece]
+  (= (:type piece) :knight))
+
+(defn
+  ^{:test (fn []
+            (is (pawn? {:type :pawn}))
+            (is-not (pawn? {:type :king})))}
+  pawn? [piece]
+  (= (:type piece) :pawn))
+
+(defn
+  ^{:test (fn []
+            (is (queen? {:type :queen}))
+            (is-not (queen? {:type :king})))}
+  queen? [piece]
+  (= (:type piece) :queen))
+
+(defn
+  ^{:test (fn []
+            (is (rook? {:type :rook}))
+            (is-not (rook? {:type :king})))}
+  rook? [piece]
+  (= (:type piece) :rook))
 
 (defn
   ^{:doc  "..."
@@ -180,9 +213,21 @@
 (defn
   ^{:test (fn []
             (is (marked? (create-board ".K") [0 1]))
-            (is-not (marked? (create-board ".K") [0 0])))}
+            (is-not (marked? (create-board ".K") [0 0]))
+            ; Outside the board
+            (is-not (marked? (create-board "..") [3 4])))}
   marked? [board position]
   (not (nil? (get-piece board position))))
+
+
+
+
+
+
+
+
+
+
 
 
 

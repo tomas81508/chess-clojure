@@ -1,6 +1,6 @@
 (ns chess.core
   "A collection of pure functions for the game Chess."
-  (:use [clojure.test :only (is run-tests function?)]
+  (:use [clojure.test :only (deftest is run-tests function?)]
         [clojure.repl :only (doc)]
         [clojure.pprint :only [pprint]]
         [test.core :only [is= is-not]])
@@ -16,7 +16,6 @@
   (let [get-first (comp (filter (fn [y] (= x y)))
                         (take 1))]
     (not (empty? (sequence get-first coll)))))
-
 
 (defn
   ^{:doc  "Determines all possible moves for a knight."
@@ -135,6 +134,90 @@
   (get-valid-moves-in-directions board
                                  from-position
                                  [[1 1] [1 -1] [-1 1] [-1 -1]]))
+
+
+(defn
+  ^{:doc  "Determines all possible moves for a pawn."
+    :test (fn []
+            (is= (get-valid-pawn-moves (s/create-state "..."
+                                                       "..."
+                                                       ".P."
+                                                       "...")
+                                       [2 1])
+                 #{[1 1]})
+            (is= (get-valid-pawn-moves (s/create-state "..."
+                                                       ".q."
+                                                       ".P."
+                                                       "...")
+                                       [2 1])
+                 #{})
+            (is= (get-valid-pawn-moves (s/create-state "..."
+                                                       "qk."
+                                                       ".P."
+                                                       "...")
+                                       [2 1])
+                 #{[1 0]})
+            (is= (get-valid-pawn-moves (s/create-state "k"
+                                                       "P")
+                                       [1 0])
+                 #{}))}
+  get-valid-pawn-moves [state from-position]
+  {:pre [(s/pawn? (s/get-piece (:board state) from-position))]}
+  (let [board (:board state)
+        pawn (s/get-piece board from-position)
+        test-forward-position (map + from-position (s/get-direction state (:owner pawn)))]
+    (-> (if (s/marked? board test-forward-position)
+          #{}
+          #{test-forward-position})
+        ((fn [positions]
+           (let [test-positions (map (fn [d] (map + test-forward-position d)) [[0 1] [0 -1]])]
+             (reduce (fn [positions test-position]
+                       (if (and (s/marked? board test-position)
+                                (not= (:owner pawn)
+                                      (s/get-owner board test-position)))
+                         (conj positions test-position)
+                         positions))
+                     positions
+                     test-positions)))))))
+
+
+(defmulti get-valid-moves (fn [board from-position]
+                            (:type (s/get-piece board from-position))))
+
+(defmethod get-valid-moves :bishop [board from-position]
+  (get-valid-bishop-moves board from-position))
+
+(defmethod get-valid-moves :queen [board from-position]
+  (get-valid-queen-moves board from-position))
+
+(defmethod get-valid-moves :pawn [board from-position]
+  (get-valid-pawn-moves board from-position))
+
+(defmethod get-valid-moves :rook [board from-position]
+  (get-valid-rook-moves board from-position))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
