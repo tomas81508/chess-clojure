@@ -98,6 +98,9 @@
              {:id :black :direction [1 0]}]
    :player-in-turn :white})
 
+(defn get-board [state]
+  (:board state))
+
 (defn
   ^{:test (fn []
             (is= (get-direction (create-state ".qQ") :white) [-1 0]))}
@@ -111,45 +114,45 @@
 (defn
   ^{:doc  "..."
     :test (fn []
-            (is= (get-piece (create-board "..K") [0 0]) nil)
-            (is= (get-piece (create-board "..K") [0 2]) {:type :king
+            (is= (get-piece (create-state "..K") [0 0]) nil)
+            (is= (get-piece (create-state "..K") [0 2]) {:type :king
                                                          :owner :white}))}
-  get-piece [board position]
-  (get board position))
+  get-piece [state position]
+  (get (get-board state) position))
 
 
 (defn
   ^{:doc  "..."
     :test (fn []
-            (is= (-> (create-board "..K")
+            (is= (-> (create-state "..K")
                      (mark [0 0] {:type :queen
                                   :owner :white}))
-                 (create-board "Q.K")))}
-  mark [board position piece]
-  (assoc board position piece))
+                 (create-state "Q.K")))}
+  mark [state position piece]
+  (assoc-in state [:board position] piece))
 
 
 (defn
   ^{:doc  "..."
     :test (fn []
-            (is= (-> (create-board "..QK")
+            (is= (-> (create-state "..QK")
                      (unmark [0 2]))
-                 (create-board "...K")))}
-  unmark [board position]
-  (assoc board position nil))
+                 (create-state "...K")))}
+  unmark [state position]
+  (assoc-in state [:board position] nil))
 
 (defn
   ^{:doc  "..."
     :test (fn []
-            (is= (-> (create-board "K..")
-                     (move [0 0] [0 2]))
-                 (create-board "..K"))
-            (is= (-> (create-board "K.q")
-                     (move [0 0] [0 2]))
-                 (create-board "..K")))}
-  move [board from-position to-position]
-  (let [piece (get-piece board from-position)]
-    (-> board
+            (is= (-> (create-state "K..")
+                     (update-position [0 0] [0 2]))
+                 (create-state "..K"))
+            (is= (-> (create-state "K.q")
+                     (update-position [0 0] [0 2]))
+                 (create-state "..K")))}
+  update-position [state from-position to-position]
+  (let [piece (get-piece state from-position)]
+    (-> state
         (unmark from-position)
         (mark to-position piece))))
 
@@ -191,33 +194,33 @@
 (defn
   ^{:doc  "..."
     :test (fn []
-            (let [board (create-board ".K")]
-              (is (on-board? board [0 0]))
-              (is (on-board? board [0 1]))
-              (is (not (on-board? board [0 -1])))))}
-  on-board? [board position]
-  (contains? board position))
+            (let [state (create-state ".K")]
+              (is (on-board? state [0 0]))
+              (is (on-board? state [0 1]))
+              (is (not (on-board? state [0 -1])))))}
+  on-board? [state position]
+  (contains? (get-board state) position))
 
 
 (defn
   ^{:test (fn []
-            (is= (get-owner (create-board "..K") [0 2]) :white)
-            (is= (get-owner (create-board "..K") [0 0]) nil)
+            (is= (get-owner (create-state "..K") [0 2]) :white)
+            (is= (get-owner (create-state "..K") [0 0]) nil)
             (is= (get-owner {:owner :black}) :black))}
   get-owner
-  ([board position]
-   (get-owner (get-piece board position)))
+  ([state position]
+   (get-owner (get-piece state position)))
   ([piece]
    (:owner piece)))
 
 (defn
   ^{:test (fn []
-            (is (marked? (create-board ".K") [0 1]))
-            (is-not (marked? (create-board ".K") [0 0]))
+            (is (marked? (create-state ".K") [0 1]))
+            (is-not (marked? (create-state ".K") [0 0]))
             ; Outside the board
-            (is-not (marked? (create-board "..") [3 4])))}
-  marked? [board position]
-  (not (nil? (get-piece board position))))
+            (is-not (marked? (create-state "..") [3 4])))}
+  marked? [state position]
+  (not (nil? (get-piece state position))))
 
 
 
