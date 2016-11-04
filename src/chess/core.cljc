@@ -169,9 +169,9 @@
 
 
 (defmulti get-valid-moves
-  ^{:doc "Returns all valid moves for the piece at the given position"}
-  (fn [state from-position]
-    (:type (s/get-piece state from-position))))
+          ^{:doc "Returns all valid moves for the piece at the given position"}
+          (fn [state from-position]
+            (:type (s/get-piece state from-position))))
 
 (defmethod get-valid-moves :bishop [state from-position]
   (get-valid-bishop-moves state from-position))
@@ -190,16 +190,16 @@
 
 
 (defn
-        ^{:doc "Determines if the given move is valid."
-      :test (fn []
-              (is (-> (s/create-state "n.."
-                                      "..."
-                                      "...")
-                      (valid-move? [0 0] [1 2])))
-              (is-not (-> (s/create-state "n.."
-                                          "..."
-                                          "...")
-                          (valid-move? [0 0] [1 1]))))}
+  ^{:doc  "Determines if the given move is valid."
+    :test (fn []
+            (is (-> (s/create-state "n.."
+                                    "..."
+                                    "...")
+                    (valid-move? [0 0] [1 2])))
+            (is-not (-> (s/create-state "n.."
+                                        "..."
+                                        "...")
+                        (valid-move? [0 0] [1 1]))))}
   valid-move? [state from-position to-position]
   {:pre [(s/marked? state from-position)]}
   (contains? (get-valid-moves state from-position) to-position))
@@ -207,7 +207,7 @@
 
 
 
-(defn 
+(defn
   ^{:doc  "Makes a move for the given player."
     :test (fn []
             (is= (-> (move (s/create-state "R..") :white [0 0] [0 2])
@@ -224,10 +224,20 @@
 
 
 
-
-
-
-
+(deftest a-game
+  (let [state (-> (s/create-state "rr"
+                                  ".."
+                                  ".."
+                                  "RR")
+                  (move :white [3 0] [0 0])
+                  (move :black [0 1] [0 0])
+                  (move :white [3 1] [0 1])
+                  (move :black [0 0] [0 1]))]
+    (is= (s/get-board state)
+         (s/create-board ".r"
+                         ".."
+                         ".."
+                         ".."))))
 
 
 
