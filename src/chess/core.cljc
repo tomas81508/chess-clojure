@@ -7,6 +7,16 @@
   (:require [chess.state :as s]
             [chess.interop :as i]))
 
+(defn create-classic-game-state []
+  (s/create-state "rnbqkbnr"
+                  "pppppppp"
+                  "........"
+                  "........"
+                  "........"
+                  "........"
+                  "PPPPPPPP"
+                  "RNBQKBNR"))
+
 
 (defn
   ^{:doc  "Checks if x is part of the collection."
@@ -20,15 +30,15 @@
 
 
 (defn
-  ^{:doc  "Determines all possible moves for a knight."
+  ^{:doc  "Determines all potential moves for a knight."
     :test (fn []
-            (is= (get-valid-knight-moves (s/create-state "....."
-                                                         ".n..."
-                                                         "....."
-                                                         "Q.k..")
-                                         [1 1])
+            (is= (get-potential-knight-moves (s/create-state "....."
+                                                             ".n..."
+                                                             "....."
+                                                             "Q.p..")
+                                             [1 1])
                  #{[0 3] [2 3] [3 0]}))}
-  get-valid-knight-moves [state from-position]
+  get-potential-knight-moves [state from-position]
   {:pre [(s/knight? (s/get-piece state from-position))]}
   (->> [[-2 -1] [-2 1] [2 -1] [2 1] [-1 2] [1 2] [-1 -2] [1 -2]]
        (map (fn [p]
@@ -42,114 +52,131 @@
 
 
 (defn-
-  ^{:test (fn []
-            (is= (get-valid-moves-in-directions (s/create-state "q..") [0 0] [[0 1]])
+  ^{:doc  "Returns a set of potentials move in the given direction at most of the distance steps from the given position."
+    :test (fn []
+            (is= (get-potential-moves-in-directions (s/create-state "q..") [0 0] [[0 1]])
                  #{[0 1] [0 2]})
-            (is= (get-valid-moves-in-directions (s/create-state "q.K.") [0 0] [[0 1]])
+            (is= (get-potential-moves-in-directions (s/create-state "q.K.") [0 0] [[0 1]])
                  #{[0 1] [0 2]})
-            (is= (get-valid-moves-in-directions (s/create-state "q..k.") [0 0] [[0 1]])
+            (is= (get-potential-moves-in-directions (s/create-state "q..k.") [0 0] [[0 1]])
+                 #{[0 1] [0 2]})
+            (is= (get-potential-moves-in-directions (s/create-state "q...k.")
+                                                    [0 0]
+                                                    [[0 1]]
+                                                    2)
+                 #{[0 1] [0 2]})
+            (is= (get-potential-moves-in-directions (s/create-state "q..Pk.")
+                                                    [0 0]
+                                                    [[0 1]]
+                                                    2)
                  #{[0 1] [0 2]}))}
-  get-valid-moves-in-directions [state from-position directions]
-  (into #{} (reduce (fn [valid-moves direction]
-                      (concat valid-moves
-                              (loop [valid-moves-in-this-direction []
-                                     length 1]
-                                (let [test-position (map + from-position (map (fn [v] (* length v)) direction))]
-                                  (cond
-                                    ; If not on board answer with the list that we currenly have
-                                    (not (s/on-board? state test-position)) valid-moves-in-this-direction
+  get-potential-moves-in-directions
+  ([state from-position directions]
+   (get-potential-moves-in-directions state from-position directions :unlimited))
+  ([state from-position directions steps]
+   (into #{} (reduce (fn [valid-moves direction]
+                       (concat valid-moves
+                               (loop [valid-moves-in-this-direction []
+                                      length 1]
+                                 (if (and (not= steps :unlimited)
+                                          (> length steps))
+                                   valid-moves-in-this-direction
+                                   (let [test-position (map + from-position (map (fn [v] (* length v)) direction))]
+                                     (cond
+                                       ; If not on board answer with the list that we currenly have
+                                       (not (s/on-board? state test-position)) valid-moves-in-this-direction
 
-                                    ; If we hit our own piece ...
-                                    (= (s/get-owner state test-position) (s/get-owner state from-position))
-                                    valid-moves-in-this-direction
+                                       ; If we hit our own piece ...
+                                       (= (s/get-owner state test-position) (s/get-owner state from-position))
+                                       valid-moves-in-this-direction
 
-                                    ; If marked by another player
-                                    (s/marked? state test-position)
-                                    (conj valid-moves-in-this-direction test-position)
+                                       ; If marked by another player
+                                       (s/marked? state test-position)
+                                       (conj valid-moves-in-this-direction test-position)
 
-                                    :else
-                                    (recur (conj valid-moves-in-this-direction test-position)
-                                           (inc length)))))))
-                    []
-                    directions)))
+                                       :else
+                                       (recur (conj valid-moves-in-this-direction test-position)
+                                              (inc length))))))))
+                     []
+                     directions))))
 
 
 (defn
-  ^{:doc  "Determines all possible moves for a queen."
+  ^{:doc  "Determines all potential moves for a queen."
     :test (fn []
-            (is= (get-valid-queen-moves (s/create-state "....."
-                                                        ".q.k."
-                                                        "..B.."
-                                                        ".....")
-                                        [1 1])
+            (is= (get-potential-queen-moves (s/create-state "....."
+                                                            ".q.k."
+                                                            "..B.."
+                                                            ".....")
+                                            [1 1])
                  #{[0 0] [0 1] [0 2]
                    [1 0] [1 2]
                    [2 0] [2 1] [2 2]
                    [3 1]}))}
-  get-valid-queen-moves [state from-position]
+  get-potential-queen-moves [state from-position]
   {:pre [(s/queen? (s/get-piece state from-position))]}
-  (get-valid-moves-in-directions state
-                                 from-position
-                                 [[-1 -1] [0 -1] [1 -1] [-1 0] [1 0] [-1 1] [0 1] [1 1]]))
+  (get-potential-moves-in-directions state
+                                     from-position
+                                     [[-1 -1] [0 -1] [1 -1] [-1 0] [1 0] [-1 1] [0 1] [1 1]]))
 
 (defn
-  ^{:doc  "Determines all possible moves for a rook."
+  ^{:doc  "Determines all potential moves for a rook."
     :test (fn []
-            (is= (get-valid-rook-moves (s/create-state "....."
-                                                       ".r.k."
-                                                       "..B.."
-                                                       ".....")
-                                       [1 1])
+            (is= (get-potential-rook-moves (s/create-state "....."
+                                                           ".r.k."
+                                                           "..B.."
+                                                           ".....")
+                                           [1 1])
                  #{[0 1] [1 0] [1 2] [2 1] [3 1]}))}
-  get-valid-rook-moves [state from-position]
+  get-potential-rook-moves [state from-position]
   {:pre [(s/rook? (s/get-piece state from-position))]}
-  (get-valid-moves-in-directions state
-                                 from-position
-                                 [[0 -1] [-1 0] [1 0] [0 1]]))
+  (get-potential-moves-in-directions state
+                                     from-position
+                                     [[0 -1] [-1 0] [1 0] [0 1]]))
 
 
 (defn
-  ^{:doc  "Determines all possible moves for a bishop."
+  ^{:doc  "Determines all potential moves for a bishop."
     :test (fn []
-            (is= (get-valid-bishop-moves (s/create-state "....."
-                                                         ".b.k."
-                                                         "B...."
-                                                         ".....")
-                                         [1 1])
+            (is= (get-potential-bishop-moves (s/create-state "....."
+                                                             ".b.k."
+                                                             "B...."
+                                                             ".....")
+                                             [1 1])
                  #{[0 0] [0 2] [2 0] [2 2] [3 3]}))}
-  get-valid-bishop-moves [state from-position]
+  get-potential-bishop-moves [state from-position]
   {:pre [(s/bishop? (s/get-piece state from-position))]}
-  (get-valid-moves-in-directions state
-                                 from-position
-                                 [[1 1] [1 -1] [-1 1] [-1 -1]]))
+  (get-potential-moves-in-directions state
+                                     from-position
+                                     [[1 1] [1 -1] [-1 1] [-1 -1]]))
 
 
 (defn
-  ^{:doc  "Determines all possible moves for a pawn."
+  ^{:doc  "Determines all potential moves for a pawn."
     :test (fn []
-            (is= (get-valid-pawn-moves (s/create-state "..."
-                                                       "..."
-                                                       ".P."
-                                                       "...")
-                                       [2 1])
+            (is= (get-potential-pawn-moves (s/create-state "..."
+                                                           "..."
+                                                           ".P."
+                                                           "...")
+                                           [2 1])
                  #{[1 1]})
-            (is= (get-valid-pawn-moves (s/create-state "..."
-                                                       ".q."
-                                                       ".P."
-                                                       "...")
-                                       [2 1])
+            (is= (get-potential-pawn-moves (s/create-state "..."
+                                                           ".q."
+                                                           ".P."
+                                                           "...")
+                                           [2 1])
                  #{})
-            (is= (get-valid-pawn-moves (s/create-state "..."
-                                                       "qk."
-                                                       ".P."
-                                                       "...")
-                                       [2 1])
+            (is= (get-potential-pawn-moves (s/create-state "..."
+                                                           "qk."
+                                                           ".P."
+                                                           "...")
+                                           [2 1])
                  #{[1 0]})
-            (is= (get-valid-pawn-moves (s/create-state "k"
-                                                       "P")
-                                       [1 0])
+            (is= (get-potential-pawn-moves (s/create-state "k"
+                                                           "P")
+                                           [1 0])
                  #{}))}
-  get-valid-pawn-moves [state from-position]
+  get-potential-pawn-moves [state from-position]
   {:pre [(s/pawn? (s/get-piece state from-position))]}
   (let [pawn (s/get-piece state from-position)
         test-forward-position (map + from-position (s/get-direction state (:owner pawn)))]
@@ -167,26 +194,74 @@
                      positions
                      test-positions)))))))
 
+(defn
+  ^{:doc  "Determines all potential moves for a pawn."
+    :test (fn []
+            (is= (get-potential-king-moves (s/create-state "p..."
+                                                           "pk.."
+                                                           ".qQ.")
+                                           [1 1])
+                 #{[0 1] [0 2] [1 2] [2 0] [2 2]}))}
+  get-potential-king-moves [state from-position]
+  {:pre [(s/king? (s/get-piece state from-position))]}
+  (let [directions [[-1 -1] [0 -1] [1 -1] [-1 0] [1 0] [-1 1] [0 1] [1 1]]]
+    (get-potential-moves-in-directions state from-position directions 1)))
 
-(defmulti get-valid-moves
-          ^{:doc "Returns all valid moves for the piece at the given position"}
+
+(defmulti get-potential-moves
+          ^{:doc "Returns all potentials moves for the piece at the given position"}
           (fn [state from-position]
             (:type (s/get-piece state from-position))))
 
-(defmethod get-valid-moves :bishop [state from-position]
-  (get-valid-bishop-moves state from-position))
+(defmethod get-potential-moves :bishop [state from-position]
+  (get-potential-bishop-moves state from-position))
 
-(defmethod get-valid-moves :knight [state from-position]
-  (get-valid-knight-moves state from-position))
+(defmethod get-potential-moves :king [state from-position]
+  (get-potential-king-moves state from-position))
 
-(defmethod get-valid-moves :queen [state from-position]
-  (get-valid-queen-moves state from-position))
+(defmethod get-potential-moves :knight [state from-position]
+  (get-potential-knight-moves state from-position))
 
-(defmethod get-valid-moves :pawn [state from-position]
-  (get-valid-pawn-moves state from-position))
+(defmethod get-potential-moves :queen [state from-position]
+  (get-potential-queen-moves state from-position))
 
-(defmethod get-valid-moves :rook [state from-position]
-  (get-valid-rook-moves state from-position))
+(defmethod get-potential-moves :pawn [state from-position]
+  (get-potential-pawn-moves state from-position))
+
+(defmethod get-potential-moves :rook [state from-position]
+  (get-potential-rook-moves state from-position))
+
+
+(defn
+  ^{:doc  "Checks if the given player is in check."
+    :test (fn []
+            (is (in-check? (s/create-state "R..k") :small))
+            (is-not (in-check? (s/create-state "R.qk") :small)))}
+  in-check? [state player-id]
+  (let [enemy-positions (s/get-position-of-pieces state (s/get-opponent-player-id state player-id))
+        king-position (s/get-king-position state player-id)]
+    (some (fn [p]
+            (seq-contains? (get-potential-moves state p) king-position))
+          enemy-positions)))
+
+(defn
+  ^{:test (fn []
+            (is= (get-valid-moves (s/create-state "KR.q"
+                                                  "....")
+                                  [0 1])
+                 #{[0 2] [0 3]})
+            (is= (get-valid-moves (s/create-state "K..q"
+                                                  ".R..")
+                                  [1 1])
+                 #{[0 1]}))}
+  get-valid-moves [state from-position]
+  (let [moving-player (s/get-owner state from-position)]
+    (->> (get-potential-moves state from-position)
+         (filter (fn [p]
+                   (let [potential-state (s/update-position state from-position p)]
+                     (not (in-check? potential-state moving-player)))))
+         (into #{}))))
+
 
 
 (defn
@@ -202,7 +277,7 @@
                         (valid-move? [0 0] [1 1]))))}
   valid-move? [state from-position to-position]
   {:pre [(s/marked? state from-position)]}
-  (contains? (get-valid-moves state from-position) to-position))
+  (contains? (get-potential-moves state from-position) to-position))
 
 
 
@@ -210,7 +285,7 @@
 (defn
   ^{:doc  "Makes a move for the given player."
     :test (fn []
-            (is= (-> (move (s/create-state "R..") :white [0 0] [0 2])
+            (is= (-> (move (s/create-state "R..") :large [0 0] [0 2])
                      (s/get-board))
                  (s/create-board "..R")))}
   move [state player-id from-position to-position]
@@ -224,20 +299,46 @@
 
 
 
-(deftest a-game
-  (let [state (-> (s/create-state "rr"
-                                  ".."
-                                  ".."
-                                  "RR")
-                  (move :white [3 0] [0 0])
-                  (move :black [0 1] [0 0])
-                  (move :white [3 1] [0 1])
-                  (move :black [0 0] [0 1]))]
+(deftest a-simple-game
+  (let [state (-> (s/create-state "rkqr"
+                                  "pppp"
+                                  "...."
+                                  "PPPP"
+                                  "RKQR")
+                  (move :large [3 0] [2 0])
+                  (move :small [1 1] [2 0])
+                  (move :large [4 0] [2 0]))]
     (is= (s/get-board state)
-         (s/create-board ".r"
-                         ".."
-                         ".."
-                         ".."))))
+         (s/create-board "rkqr"
+                         "p.pp"
+                         "R..."
+                         ".PPP"
+                         ".KQR"))))
+
+(deftest another-simple-game
+  (let [state-atom (atom (s/create-state "rkqr"
+                                         "pppp"
+                                         "...."
+                                         "PPPP"
+                                         "RKQR"))]
+    (swap! state-atom move :large [3 0] [2 0])
+    (is= (s/get-board @state-atom) (s/create-board "rkqr"
+                                                   "pppp"
+                                                   "P..."
+                                                   ".PPP"
+                                                   "RKQR"))
+    (swap! state-atom move :small [1 1] [2 0])
+    (is= (s/get-board @state-atom) (s/create-board "rkqr"
+                                                   "p.pp"
+                                                   "p..."
+                                                   ".PPP"
+                                                   "RKQR"))
+    (swap! state-atom move :large [4 0] [2 0])
+    (is= (s/get-board @state-atom) (s/create-board "rkqr"
+                                                   "p.pp"
+                                                   "R..."
+                                                   ".PPP"
+                                                   ".KQR"))))
 
 
 
