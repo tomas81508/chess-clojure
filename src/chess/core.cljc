@@ -3,7 +3,7 @@
   (:use [clojure.test :only (deftest is run-tests function?)]
         [clojure.repl :only (doc)]
         [clojure.pprint :only [pprint]]
-        [test.core :only [is= is-not]])
+        [test.core :only [is= is-not error?]])
   (:require [chess.state :as s]
             [chess.interop :as i]))
 
@@ -54,21 +54,20 @@
 (defn-
   ^{:doc  "Returns a set of potentials move in the given direction at most of the distance steps from the given position."
     :test (fn []
+            ; Movement ending by out of board
             (is= (get-potential-moves-in-directions (s/create-state "q..") [0 0] [[0 1]])
                  #{[0 1] [0 2]})
+            ; Movement ending on enemy player's piece
             (is= (get-potential-moves-in-directions (s/create-state "q.K.") [0 0] [[0 1]])
                  #{[0 1] [0 2]})
+            ; Movement ending on own player's piece
             (is= (get-potential-moves-in-directions (s/create-state "q..k.") [0 0] [[0 1]])
                  #{[0 1] [0 2]})
-            (is= (get-potential-moves-in-directions (s/create-state "q...k.")
-                                                    [0 0]
-                                                    [[0 1]]
-                                                    2)
+            ; Assuming that the queen only could move two steps
+            (is= (get-potential-moves-in-directions (s/create-state "q...k.") [0 0] [[0 1]] 2)
                  #{[0 1] [0 2]})
-            (is= (get-potential-moves-in-directions (s/create-state "q..Pk.")
-                                                    [0 0]
-                                                    [[0 1]]
-                                                    2)
+            ; Assuming that the queen only could move two steps
+            (is= (get-potential-moves-in-directions (s/create-state "q..Pk.") [0 0] [[0 1]] 2)
                  #{[0 1] [0 2]}))}
   get-potential-moves-in-directions
   ([state from-position directions]
@@ -263,7 +262,6 @@
          (into #{}))))
 
 
-
 (defn
   ^{:doc  "Determines if the given move is valid."
     :test (fn []
@@ -277,7 +275,7 @@
                         (valid-move? [0 0] [1 1]))))}
   valid-move? [state from-position to-position]
   {:pre [(s/marked? state from-position)]}
-  (contains? (get-potential-moves state from-position) to-position))
+  (contains? (get-valid-moves state from-position) to-position))
 
 
 
@@ -285,15 +283,35 @@
 (defn
   ^{:doc  "Makes a move for the given player."
     :test (fn []
-            (is= (-> (move (s/create-state "R..") :large [0 0] [0 2])
+            (is= (-> (s/create-state "R..")
+                     (move :large [0 0] [0 2])
                      (s/get-board))
-                 (s/create-board "..R")))}
+                 (s/create-board "..R"))
+            (error? (-> (s/create-state "K..k")
+                        (move :small [0 3] [0 2]))))}
   move [state player-id from-position to-position]
+  (when (not= (:player-in-turn state) player-id)
+    (i/error "The player " player-id " is not in turn."))
   (when-not (valid-move? state from-position to-position)
     (i/error "The move is not valid."))
-  (s/update-position state from-position to-position))
+  (-> state
+      (s/update-position from-position to-position)
+      (s/update-player-in-turn)))
 
 
+(defn
+  ^{:doc  "..."
+    :test (fn []
+            (let [state (-> (s/create-state "R...K..R")
+                            (castle [0 4] [0 2]))
+                  king-piece (s/get-piece state [0 2])
+                  rook-piece (s/get-piece state [0 3])]
+              (is= (:type king-piece) :king)
+              (is (:moved? king-piece))
+              (is= (:type rook-piece) :rook)
+              (is (:moved? rook-piece))))}
+  castle [state from-position to-posisiton]
+  )
 
 
 

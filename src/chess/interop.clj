@@ -1,4 +1,4 @@
 (ns chess.interop)
 
-(defn error [message]
-  (throw (Exception. message)))
+(defn error [& strings]
+  (throw (Exception. (apply str strings))))

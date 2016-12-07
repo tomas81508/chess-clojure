@@ -10,12 +10,12 @@
 (defn-
   ^{:doc  "Constructs a piece given a letter. Small letter for the black player."
     :test (fn []
-            (is= (letter->value "b") {:type :bishop :owner :small})
-            (is= (letter->value "p") {:type :pawn :owner :small})
-            (is= (letter->value "K") {:type :king :owner :large})
-            (is= (letter->value "Q") {:type :queen :owner :large})
-            (is= (letter->value "r") {:type :rook :owner :small})
-            (is= (letter->value "n") {:type :knight :owner :small})
+            (is= (letter->value "b") {:type :bishop :owner :small :moved? false})
+            (is= (letter->value "p") {:type :pawn :owner :small :moved? false})
+            (is= (letter->value "K") {:type :king :owner :large :moved? false})
+            (is= (letter->value "Q") {:type :queen :owner :large :moved? false})
+            (is= (letter->value "r") {:type :rook :owner :small :moved? false})
+            (is= (letter->value "n") {:type :knight :owner :small :moved? false})
             (is= (letter->value ".") nil)
             (is (thrown? Exception (letter->value "x"))))}
   letter->value [letter]
@@ -30,7 +30,8 @@
               "r" :rook)                                    ; torn
      :owner (if (= letter (lower-case letter))
               :small
-              :large)}))
+              :large)
+     :moved? false}))
 
 
 (defn
@@ -39,21 +40,26 @@
             (is= (create-board ".pn")
                  {[0 0] nil
                   [0 1] {:type  :pawn
-                         :owner :small}
+                         :owner :small
+                         :moved? false}
                   [0 2] {:type  :knight
-                         :owner :small}})
+                         :owner :small
+                         :moved? false}})
             (is= (create-board "..kq.r"
                                "......"
                                ".BKQ..")
                  {[0 0] nil
                   [0 1] nil
                   [0 2] {:type  :king
-                         :owner :small}
+                         :owner :small
+                         :moved? false}
                   [0 3] {:type  :queen
-                         :owner :small}
+                         :owner :small
+                         :moved? false}
                   [0 4] nil
                   [0 5] {:type  :rook
-                         :owner :small}
+                         :owner :small
+                         :moved? false}
                   [1 0] nil
                   [1 1] nil
                   [1 2] nil
@@ -62,11 +68,14 @@
                   [1 5] nil
                   [2 0] nil
                   [2 1] {:type  :bishop
-                         :owner :large}
+                         :owner :large
+                         :moved? false}
                   [2 2] {:type  :king
-                         :owner :large}
+                         :owner :large
+                         :moved? false}
                   [2 3] {:type  :queen
-                         :owner :large}
+                         :owner :large
+                         :moved? false}
                   [2 4] nil
                   [2 5] nil}))}
   create-board [& strings]
@@ -87,8 +96,8 @@
     :test (fn []
             (is= (create-state ".pn")
                  {:board          {[0 0] nil
-                                   [0 1] {:type :pawn :owner :small}
-                                   [0 2] {:type :knight :owner :small}}
+                                   [0 1] {:type :pawn :owner :small :moved? false}
+                                   [0 2] {:type :knight :owner :small :moved? false}}
                   :players        [{:id :large :direction [-1 0]}
                                    {:id :small :direction [1 0]}]
                   :player-in-turn :large}))}
@@ -97,9 +106,6 @@
    :players        [{:id :large :direction [-1 0]}
                     {:id :small :direction [1 0]}]
    :player-in-turn :large})
-
-(defn get-board [state]
-  (:board state))
 
 (defn
   ^{:test (fn []
@@ -116,9 +122,34 @@
     :test (fn []
             (is= (get-piece (create-state "..K") [0 0]) nil)
             (is= (get-piece (create-state "..K") [0 2]) {:type  :king
-                                                         :owner :large}))}
+                                                         :owner :large
+                                                         :moved? false}))}
   get-piece [state position]
   (get (get-board state) position))
+
+(defn
+  ^{:test (fn []
+            (is= (-> (create-state "R..")
+                     (update-piece [0 0] (fn [p]
+                                           (assoc p :moved? true)))
+                     (get-piece [0 0])
+                     (:moved?))
+                 true))}
+  update-piece [state position f]
+  (update-in state [:board position] f))
+
+(defn
+  ^{:test (fn []
+            (is= (-> (create-state "R..")
+                     (mark-piece-as-moved [0 0])
+                     (get-piece [0 0])
+                     (:moved?))
+                 true))}
+  mark-piece-as-moved [state position]
+  (update-piece state position (fn [p] (assoc p :moved? true))))
+
+(defn get-board [state]
+  (:board state))
 
 
 (defn
@@ -126,7 +157,8 @@
     :test (fn []
             (is= (-> (create-state "..K")
                      (mark [0 0] {:type  :queen
-                                  :owner :large}))
+                                  :owner :large
+                                  :moved? false}))
                  (create-state "Q.K")))}
   mark [state position piece]
   (assoc-in state [:board position] piece))
@@ -277,6 +309,20 @@
        (first)))
 
 
+
+(defn
+  ^{:doc  "Updates the player in turn."
+    :test (fn []
+            (is= (-> (update-player-in-turn (create-state ".."))
+                     (:player-in-turn))
+                 :small))}
+  update-player-in-turn [state]
+  (let [change-player (fn [current-player-in-turn players]
+                        (->> players
+                             (map :id)
+                             (filter (fn [id] (not= id current-player-in-turn)))
+                             (first)))]
+    (update state :player-in-turn change-player (:players state))))
 
 
 
