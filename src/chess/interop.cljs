@@ -1,5 +1,5 @@
 (ns chess.interop)
 
-(defn error [message]
+(defn error [& strings]
   ; TODO
   )

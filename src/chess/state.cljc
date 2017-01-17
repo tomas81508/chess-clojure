@@ -21,16 +21,16 @@
   letter->value [letter]
   (if (= letter ".")
     nil
-    {:type  (condp = (lower-case letter)
-              "b" :bishop                                   ; löpare
-              "n" :knight                                   ; häst eller springare
-              "k" :king                                     ; kung
-              "p" :pawn                                     ; bonde
-              "q" :queen                                    ; drottning
-              "r" :rook)                                    ; torn
-     :owner (if (= letter (lower-case letter))
-              :small
-              :large)
+    {:type   (condp = (lower-case letter)
+               "b" :bishop                                  ; löpare
+               "n" :knight                                  ; häst eller springare
+               "k" :king                                    ; kung
+               "p" :pawn                                    ; bonde
+               "q" :queen                                   ; drottning
+               "r" :rook)                                   ; torn
+     :owner  (if (= letter (lower-case letter))
+               :small
+               :large)
      :moved? false}))
 
 
@@ -39,26 +39,26 @@
     :test (fn []
             (is= (create-board ".pn")
                  {[0 0] nil
-                  [0 1] {:type  :pawn
-                         :owner :small
+                  [0 1] {:type   :pawn
+                         :owner  :small
                          :moved? false}
-                  [0 2] {:type  :knight
-                         :owner :small
+                  [0 2] {:type   :knight
+                         :owner  :small
                          :moved? false}})
             (is= (create-board "..kq.r"
                                "......"
                                ".BKQ..")
                  {[0 0] nil
                   [0 1] nil
-                  [0 2] {:type  :king
-                         :owner :small
+                  [0 2] {:type   :king
+                         :owner  :small
                          :moved? false}
-                  [0 3] {:type  :queen
-                         :owner :small
+                  [0 3] {:type   :queen
+                         :owner  :small
                          :moved? false}
                   [0 4] nil
-                  [0 5] {:type  :rook
-                         :owner :small
+                  [0 5] {:type   :rook
+                         :owner  :small
                          :moved? false}
                   [1 0] nil
                   [1 1] nil
@@ -67,14 +67,14 @@
                   [1 4] nil
                   [1 5] nil
                   [2 0] nil
-                  [2 1] {:type  :bishop
-                         :owner :large
+                  [2 1] {:type   :bishop
+                         :owner  :large
                          :moved? false}
-                  [2 2] {:type  :king
-                         :owner :large
+                  [2 2] {:type   :king
+                         :owner  :large
                          :moved? false}
-                  [2 3] {:type  :queen
-                         :owner :large
+                  [2 3] {:type   :queen
+                         :owner  :large
                          :moved? false}
                   [2 4] nil
                   [2 5] nil}))}
@@ -89,7 +89,6 @@
        (reduce (fn [a v]
                  (assoc a (:square v) (:value v)))
                {})))
-
 
 (defn
   ^{:doc  "Creates a state."
@@ -107,6 +106,10 @@
                     {:id :small :direction [1 0]}]
    :player-in-turn :large})
 
+
+(defn player-in-turn [state]
+  (:player-in-turn state))
+
 (defn
   ^{:test (fn []
             (is= (get-direction (create-state ".qQ") :large) [-1 0]))}
@@ -116,13 +119,16 @@
        (first)
        (:direction)))
 
+(defn get-board [state]
+  (:board state))
+
 
 (defn
   ^{:doc  "..."
     :test (fn []
             (is= (get-piece (create-state "..K") [0 0]) nil)
-            (is= (get-piece (create-state "..K") [0 2]) {:type  :king
-                                                         :owner :large
+            (is= (get-piece (create-state "..K") [0 2]) {:type   :king
+                                                         :owner  :large
                                                          :moved? false}))}
   get-piece [state position]
   (get (get-board state) position))
@@ -148,16 +154,13 @@
   mark-piece-as-moved [state position]
   (update-piece state position (fn [p] (assoc p :moved? true))))
 
-(defn get-board [state]
-  (:board state))
-
 
 (defn
   ^{:doc  "..."
     :test (fn []
             (is= (-> (create-state "..K")
-                     (mark [0 0] {:type  :queen
-                                  :owner :large
+                     (mark [0 0] {:type   :queen
+                                  :owner  :large
                                   :moved? false}))
                  (create-state "Q.K")))}
   mark [state position piece]
@@ -174,7 +177,7 @@
   (assoc-in state [:board position] nil))
 
 (defn
-  ^{:doc  "..."
+  ^{:doc  "Changes the position of the piece at the from position."
     :test (fn []
             (is= (-> (create-state "K..")
                      (update-position [0 0] [0 2]))
@@ -198,9 +201,14 @@
 (defn
   ^{:test (fn []
             (is (king? {:type :king}))
-            (is-not (king? {:type :queen})))}
-  king? [piece]
-  (= (:type piece) :king))
+            (is-not (king? {:type :queen}))
+            (is (king? (create-state "K.") [0 0]))
+            (is-not (king? (create-state "Q.") [0 0])))}
+  king?
+  ([piece]
+   (= (:type piece) :king))
+  ([state position]
+   (king? (get-piece state position))))
 
 (defn
   ^{:test (fn []
@@ -324,11 +332,35 @@
                              (first)))]
     (update state :player-in-turn change-player (:players state))))
 
-
-
-
-
-
+(defn
+  ^{:doc  "Returns the board visible information of the board."
+    :test (fn []
+            (is= (board->string (create-board "..kQ"
+                                              "pp.."))
+                 "..kQ\npp.."))}
+  board->string [board]
+  (let [get-letter (fn [piece]
+                     (if (nil? piece)
+                       "."
+                       (let [pre-letter (condp = (:type piece)
+                                          :king "k"
+                                          :queen "q"
+                                          :pawn "p"
+                                          :bishop "b"
+                                          :knight "n"
+                                          :rook "r")]
+                         (if (= (:owner piece) :small)
+                           pre-letter
+                           (clojure.string/upper-case pre-letter)))))]
+    (reduce (fn [string p]
+              (let [piece (get board p)
+                    piece-string (get-letter piece)]
+                (if (and (= (second p) 0)
+                         (not= (first p) 0))
+                  (str string "\n" piece-string)
+                  (str string piece-string))))
+            ""
+            (sort (keys board)))))
 
 
 
