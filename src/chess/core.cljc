@@ -480,7 +480,7 @@
                                               (contains? (get-valid-moves state p) to-position))))
                 from-position (if (= (count from-positions) 1)
                                 (first from-positions)
-                                (let [row-or-column (subs algebraic-notation 1 2)]
+                                (let [row-or-column (re-find #"[a-z]|[0-9]" algebraic-notation)]
                                   (cond (re-find #"[1-8]" row-or-column)
                                         (let [row (- 7 (dec (read-string row-or-column)))]
                                           (->> from-positions
@@ -523,6 +523,9 @@
   (second
     (let [state (create-classic-game-state)]
       (reduce (fn [[state moves] algebraic-move]
+                (println "----------------------")
+                (println algebraic-move)
+                (println (s/board->string (s/get-board state)))
                 (let [move-data (an-algebraic-notation->move-data state algebraic-move)]
                   [(condp = (:type move-data)
                      :move
@@ -544,7 +547,7 @@
                       (= (:type move-data) :castle)
                       (castle state (:player-in-turn state) (:from-position move-data) (:to-position move-data))))
               state
-              (algebraic-notation->move-data (take 63 (get-game-moves (get-Ficher-Spassky-game))))))))
+              (algebraic-notation->move-data (take 148 (get-game-moves (get-Ficher-Spassky-game))))))))
 
 
 
