@@ -3,7 +3,8 @@
     [chess.games :refer :all]
     [org.httpkit.server :refer :all]
     [compojure.core :refer :all]
-    [clojure.data.json :as json]))
+    [clojure.data.json :as json]
+    [chess.mapper :refer :all]))
 
 ;; Routes
 
@@ -12,7 +13,7 @@
    :headers {"Content-Type"                 "text/json; charset=utf-8"
              "Access-Control-Allow-Origin"  "*"
              "Access-Control-Allow-Methods" "*"}
-   :body    (json/write-str game)})
+   :body    (json/write-str (game->view-game game))})
 
 (defroutes
   chess
