@@ -428,8 +428,8 @@
             (is= (algebraic-notation->coordinates "h1") [7 7])
             (is= (algebraic-notation->coordinates "e4") [4 4])
             (is= (algebraic-notation->coordinates "Nf6") [2 5])
-            (is= (algebraic-notation->coordinates "Rfe8") [0 4]) ; moving a Rook to e8 from the column f
-            )}
+            (is= (algebraic-notation->coordinates "Rfe8") [0 4]))} ; moving a Rook to e8 from the column f
+
   algebraic-notation->coordinates [algebraic-move]
   (let [position (re-find #"[a-h][1-8]" algebraic-move)]
     [(- 7 (- (int (second position)) 49)) (letter-column->int (first position))]))
@@ -548,44 +548,3 @@
                       (castle state (:player-in-turn state) (:from-position move-data) (:to-position move-data))))
               state
               (algebraic-notation->move-data (take 148 (get-game-moves (get-Ficher-Spassky-game))))))))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

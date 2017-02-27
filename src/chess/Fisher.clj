@@ -10,9 +10,9 @@
 
 
 (defn
-^{:test (fn []
-          (is= (get-game-moves "1. e4 Nf6 2. e5 Nd5 3. d4 d6 4. Nf3 g6 5. Bc4 Nb6")
-               ["e4" "Nf6" "e5" "Nd5" "d4" "d6" "Nf3" "g6" "Bc4" "Nb6"]))}
+ ^{:test (fn []
+           (is= (get-game-moves "1. e4 Nf6 2. e5 Nd5 3. d4 d6 4. Nf3 g6 5. Bc4 Nb6")
+                ["e4" "Nf6" "e5" "Nd5" "d4" "d6" "Nf3" "g6" "Bc4" "Nb6"]))}
   get-game-moves [algebraic-notation-string]
   (->> (clojure.string/split algebraic-notation-string #" ")
        (partition 3)

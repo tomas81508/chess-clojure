@@ -361,34 +361,3 @@
                   (str string piece-string))))
             ""
             (sort (keys board)))))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

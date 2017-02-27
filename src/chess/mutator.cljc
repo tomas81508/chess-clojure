@@ -28,23 +28,3 @@
     (is= (:type (s/get-piece (get-game game-atom) [4 4])) :pawn)
     (move! game-atom :small [0 1] [2 0])
     (is= (:type (s/get-piece (get-game game-atom) [2 0])) :knight)))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
