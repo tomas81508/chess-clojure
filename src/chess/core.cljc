@@ -241,6 +241,12 @@
 (defmethod get-potential-moves :rook [state from-position]
   (get-potential-rook-moves state from-position))
 
+(defn
+  ^{:test (fn []
+            (is (player-in-turn? (s/create-state "p..P") :large))
+            (is-not (player-in-turn? (s/create-state "p..P") :small)))}
+  player-in-turn? [state player-id]
+  (= (s/player-in-turn state) player-id))
 
 (defn
   ^{:doc  "Checks if the given player is in check."
@@ -263,24 +269,30 @@
             (is= (get-valid-moves (s/create-state "K..q"
                                                   ".R..")
                                   [1 1])
-                 #{[0 1]}))}
+                 #{[0 1]})
+            ; Pieces of players that are not in turn should not be able to move.
+            (is= (get-valid-moves (s/create-state "K..k")
+                                  [0 3])
+                 #{}))}
   get-valid-moves [state from-position]
   (let [moving-player (s/get-owner state from-position)]
-    (->> (get-potential-moves state from-position)
-         (filter (fn [p]
-                   (let [potential-state (s/update-position state from-position p)]
-                     (not (in-check? potential-state moving-player)))))
-         (into #{}))))
+    (if (not (player-in-turn? state moving-player))
+      #{}
+      (->> (get-potential-moves state from-position)
+           (filter (fn [p]
+                     (let [potential-state (s/update-position state from-position p)]
+                       (not (in-check? potential-state moving-player)))))
+           (into #{})))))
 
 
 (defn
   ^{:doc  "Determines if the given move is valid."
     :test (fn []
-            (is (-> (s/create-state "n.."
+            (is (-> (s/create-state "N.."
                                     "..."
                                     "...")
                     (valid-move? [0 0] [1 2])))
-            (is-not (-> (s/create-state "n.."
+            (is-not (-> (s/create-state "N.."
                                         "..."
                                         "...")
                         (valid-move? [0 0] [1 1]))))}
@@ -305,7 +317,7 @@
             (error? (-> (s/create-state "K..k")
                         (move :small [0 3] [0 2]))))}
   move [state player-id from-position to-position]
-  (when (not= (s/player-in-turn state) player-id)
+  (when-not (player-in-turn? state player-id)
     (i/error "The player " player-id " is not in turn."))
   (when-not (valid-move? state from-position to-position)
     (i/error "The move is not valid."))
@@ -523,9 +535,9 @@
   (second
     (let [state (create-classic-game-state)]
       (reduce (fn [[state moves] algebraic-move]
-                (println "----------------------")
-                (println algebraic-move)
-                (println (s/board->string (s/get-board state)))
+                ;(println "----------------------")
+                ;(println algebraic-move)
+                ;(println (s/board->string (s/get-board state)))
                 (let [move-data (an-algebraic-notation->move-data state algebraic-move)]
                   [(condp = (:type move-data)
                      :move
