@@ -88,3 +88,4 @@
    :players      (map (fn [player]
                         {:id (:id player)})
                       (:players game))})
+

@@ -2,10 +2,10 @@
   (:require [clojure.spec :as s]
             [clojure.spec.test :as spec-test]
             [chess.spec]
-            [chess.mapper]))
+            [chess.server]))
 
-(s/fdef chess.mapper/game->view-game
-        :ret :chess.spec/game)
+(s/fdef chess.server/game-response
+        :args (s/cat :game :chess.spec/game))
 
-(spec-test/instrument `chess.mapper/game->view-game)
+(spec-test/instrument `chess.server/game-response)
 
