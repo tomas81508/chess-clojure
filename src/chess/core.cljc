@@ -410,8 +410,8 @@
 (defn
   ^{:test (fn []
             (is= (get-pieces-by (s/create-state ".Kq.pp.") {:player-id :small :type :pawn})
-                 {[0 4] {:type :pawn :owner :small :moved? false}
-                  [0 5] {:type :pawn :owner :small :moved? false}}))}
+                 {[0 4] {:type :pawn :owner :small :moved? false :id "3"}
+                  [0 5] {:type :pawn :owner :small :moved? false :id "4"}}))}
   get-pieces-by [state {player-id :player-id type :type}]
   (reduce (fn [map key]
             (if (or (nil? (get map key))
