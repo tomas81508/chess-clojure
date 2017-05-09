@@ -332,20 +332,58 @@
     :test (fn []
             (is (-> (s/create-state "R...K...")
                     (valid-castle? [0 4] [0 2])))
+            (is (-> (s/create-state "R...K..R")
+                    (valid-castle? [0 4] [0 6])))
+            (is (-> (s/create-state "R...K..R")
+                    (s/mark-piece-as-moved [0 0])
+                    (valid-castle? [0 4] [0 6])))
+            ;king is not going to correct square
+            (is-not (-> (s/create-state "R...K...")
+                        (valid-castle? [0 4] [0 1])))
+            (is-not (-> (s/create-state "R...K...")
+                        (valid-castle? [0 4] [0 3])))
+            (is-not (-> (s/create-state "....K..R"
+                                        "........")
+                        (valid-castle? [0 4] [1 6])))
+            (is-not (-> (s/create-state "R...K...")
+                        (valid-castle? [0 4] [0 6])))
+            (is-not (-> (s/create-state "R...K..P")
+                        (valid-castle? [0 4] [0 6])))
+            ; Castle is blocked by piece between rook and king
+            (is-not (-> (s/create-state "RN..K...")
+                        (valid-castle? [0 4] [0 2])))
+            ; Castle is blocked by piece attacking square that king must pass
+            (is-not (-> (s/create-state ".......n"
+                                        "....K..R")
+                        (valid-castle? [1 4] [1 6])))
+            ; Castle is blocked by king in check
+            (is-not (-> (s/create-state "..n....."
+                                        "....K..R")
+                        (valid-castle? [1 4] [1 6])))
+            ; Castle is blocked by moved rook
             (is-not (-> (s/create-state "R...K...")
                         (s/mark-piece-as-moved [0 0])
-                        (valid-castle? [0 4] [0 2]))))}
+                        (valid-castle? [0 4] [0 2])))
+            ; Castle is blocked by moved king
+            (is-not (-> (s/create-state "R...K...")
+                        (s/mark-piece-as-moved [0 4])
+                        (valid-castle? [0 4] [0 2])))
+            )}
   valid-castle? [state king-position king-to-position]
   {:pre [(s/king? state king-position)]}
-  (let [direction (if (pos? (second (map - king-position king-to-position)))
+  (let [king-position-change (map - king-position king-to-position)
+        direction (if (pos? (second (map - king-position king-to-position)))
                     [0 -1]
                     [0 1])
         rook-position (if (= direction [0 -1])
                         [(first king-position) 0]
-                        [(first king-position) 7])]
+                        [(first king-position) 7])
+        rook (s/get-piece state rook-position)]
     (and (not (in-check? state (:player-in-turn state)))
+         (or (= king-position-change [0 2]) (= king-position-change [0 -2]))
          (not (:moved? (s/get-piece state king-position)))
-         (not (:moved? (s/get-piece state rook-position)))
+         (= (:type rook) :rook)
+         (not (:moved? rook))
          (reduce (fn [valid? p]
                    (and valid?
                         (not (s/marked? state p))
