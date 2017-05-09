@@ -9,11 +9,13 @@
 
 (s/def ::column ::coordinate)
 
-(s/def ::id keyword?)
+(s/def ::id (s/or :keyword keyword?
+                  :string string?))
 
 (s/valid? ::id :white)
 (s/valid? ::id :small)
-(s/valid? ::id "kaka")
+(s/explain ::id "kaka")
+(s/explain ::id 2)
 
 (s/def ::playerInTurn ::id)
 
@@ -33,10 +35,12 @@
 (s/def ::coordinates (s/and (s/+ ::coordinate)
                             (fn [x] (= (count x) 2))))
 
+(s/explain ::coordinates [1 2 3])
+
 (s/def ::valid-moves (s/and set?
                             (s/* ::coordinates)))
 
-(s/def ::piece (s/or :something (s/keys :req-un [::type ::owner ::valid-moves])
+(s/def ::piece (s/or :something (s/keys :req-un [::type ::owner ::valid-moves ::id])
                      :nothing nil?))
 
 

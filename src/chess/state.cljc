@@ -41,10 +41,12 @@
                  {[0 0] nil
                   [0 1] {:type   :pawn
                          :owner  :small
-                         :moved? false}
+                         :moved? false
+                         :id     "1"}
                   [0 2] {:type   :knight
                          :owner  :small
-                         :moved? false}})
+                         :moved? false
+                         :id     "2"}})
             (is= (create-board "..kq.r"
                                "......"
                                ".BKQ..")
@@ -52,14 +54,17 @@
                   [0 1] nil
                   [0 2] {:type   :king
                          :owner  :small
-                         :moved? false}
+                         :moved? false
+                         :id     "1"}
                   [0 3] {:type   :queen
                          :owner  :small
-                         :moved? false}
+                         :moved? false
+                         :id     "2"}
                   [0 4] nil
                   [0 5] {:type   :rook
                          :owner  :small
-                         :moved? false}
+                         :moved? false
+                         :id     "3"}
                   [1 0] nil
                   [1 1] nil
                   [1 2] nil
@@ -69,34 +74,40 @@
                   [2 0] nil
                   [2 1] {:type   :bishop
                          :owner  :large
-                         :moved? false}
+                         :moved? false
+                         :id     "4"}
                   [2 2] {:type   :king
                          :owner  :large
-                         :moved? false}
+                         :moved? false
+                         :id     "5"}
                   [2 3] {:type   :queen
                          :owner  :large
-                         :moved? false}
+                         :moved? false
+                         :id     "6"}
                   [2 4] nil
                   [2 5] nil}))}
   create-board [& strings]
-  (->> (map-indexed (fn [row-index string]
+  (let [counter (atom 0)]
+    (->> (map-indexed (fn [row-index string]
                       (map-indexed (fn [column-index letter]
                                      {:square [row-index column-index]
-                                      :value  (letter->value (str letter))})
+                                      :value  (when-let [value (letter->value (str letter))]
+                                                (swap! counter inc)
+                                                (assoc value :id (str @counter)))})
                                    string))
                     strings)
        (flatten)
        (reduce (fn [a v]
                  (assoc a (:square v) (:value v)))
-               {})))
+               {}))))
 
 (defn
   ^{:doc  "Creates a state."
     :test (fn []
             (is= (create-state ".pn")
                  {:board          {[0 0] nil
-                                   [0 1] {:type :pawn :owner :small :moved? false}
-                                   [0 2] {:type :knight :owner :small :moved? false}}
+                                   [0 1] {:type :pawn :owner :small :moved? false :id "1"}
+                                   [0 2] {:type :knight :owner :small :moved? false :id "2"}}
                   :players        [{:id :large :direction [-1 0]}
                                    {:id :small :direction [1 0]}]
                   :player-in-turn :large}))}
@@ -129,7 +140,8 @@
             (is= (get-piece (create-state "..K") [0 0]) nil)
             (is= (get-piece (create-state "..K") [0 2]) {:type   :king
                                                          :owner  :large
-                                                         :moved? false}))}
+                                                         :moved? false
+                                                         :id "1"}))}
   get-piece [state position]
   (get (get-board state) position))
 
@@ -159,10 +171,10 @@
   ^{:doc  "..."
     :test (fn []
             (is= (-> (create-state "..K")
-                     (mark [0 0] {:type   :queen
-                                  :owner  :large
-                                  :moved? false}))
-                 (create-state "Q.K")))}
+                     (mark [0 0] {:type   :queen})
+                     (get-piece [0 0])
+                     (:type))
+                 :queen))}
   mark [state position piece]
   (assoc-in state [:board position] piece))
 
@@ -171,8 +183,9 @@
   ^{:doc  "..."
     :test (fn []
             (is= (-> (create-state "..QK")
-                     (unmark [0 2]))
-                 (create-state "...K")))}
+                     (unmark [0 2])
+                     (get-piece [0 2]))
+                 nil))}
   unmark [state position]
   (assoc-in state [:board position] nil))
 
