@@ -8,21 +8,21 @@
             [chess.state :as s]))
 
 (defn create-game! [game-atom]
-  (reset! game-atom (core/create-classic-game-state)))
+  (first (reset! game-atom (list (core/create-classic-game-state)))))
 
 (defn move! [game-atom player-id from-position to-position]
-  (swap! game-atom core/move player-id from-position to-position))
+  (first (swap! game-atom conj (core/move (first @game-atom) player-id from-position to-position))))
 
 (defn castle! [game-atom player-id from-position to-position]
-  (swap! game-atom core/castle player-id from-position to-position))
+  (first (swap! game-atom conj (core/castle (first @game-atom) player-id from-position to-position))))
 
 (defn get-game [game-atom]
-  @game-atom)
+  (first @game-atom))
 
 
 
 (deftest A-simple-game
-  (let [game-atom (atom {})]
+  (let [game-atom (atom nil)]
     (create-game! game-atom)
     (move! game-atom :large [6 4] [4 4])
     (is= (:type (s/get-piece (get-game game-atom) [4 4])) :pawn)

@@ -6,7 +6,7 @@
         [test.core :only [is= is-not]])
   (:require [chess.mutator :as m]))
 
-(def game-atom (atom {}))
+(def game-atom (atom (list)))
 
 (defn create-game! []
   (m/create-game! game-atom))
