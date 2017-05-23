@@ -30,7 +30,11 @@
           from-position (:from-position params)
           to-position (:to-position params)
           player-id (keyword (:player-id params))]
-      (time (game-response (game->view-game (castle! player-id from-position to-position)))))))
+      (time (game-response (game->view-game (castle! player-id from-position to-position))))))
+  (POST "/undo" {body :body}
+    (let [params (json/read-json (slurp body))
+          player-id (keyword (:player-id params))]
+      (time (game-response (game->view-game (undo! player-id)))))))
 
 
 ;; Starting & Stopping

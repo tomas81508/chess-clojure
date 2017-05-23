@@ -327,9 +327,9 @@
       (s/update-player-in-turn)))
 
 
-(defn
-  ^{:doc  "Determines if a castle is valid."
-    :test (fn []
+(defn valid-castle?
+  "Determines if a castle is valid."
+  {:test (fn []
             (is (-> (s/create-state "R...K...")
                     (valid-castle? [0 4] [0 2])))
             (is (-> (s/create-state "R...K..R")
@@ -367,9 +367,8 @@
             ; Castle is blocked by moved king
             (is-not (-> (s/create-state "R...K...")
                         (s/mark-piece-as-moved [0 4])
-                        (valid-castle? [0 4] [0 2])))
-            )}
-  valid-castle? [state king-position king-to-position]
+                        (valid-castle? [0 4] [0 2]))))}
+  [state king-position king-to-position]
   {:pre [(s/king? state king-position)]}
   (let [king-position-change (map - king-position king-to-position)
         direction (if (pos? (second (map - king-position king-to-position)))

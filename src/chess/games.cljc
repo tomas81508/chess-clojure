@@ -17,5 +17,8 @@
 (defn castle! [player-id from-position to-position]
   (m/castle! game-atom player-id from-position to-position))
 
+(defn undo! [player-id]
+  (m/undo! game-atom player-id))
+
 (defn get-game []
   @game-atom)
