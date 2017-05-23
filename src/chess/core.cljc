@@ -204,22 +204,25 @@
                      positions
                      test-positions)))))))
 
-(defn
-  ^{:doc  "Determines all potential moves for a pawn."
-    :test (fn []
-            (is= (get-potential-king-moves (s/create-state "p..."
-                                                           "pk.."
-                                                           ".qQ.")
-                                           [1 1])
-                 #{[0 1] [0 2] [1 2] [2 0] [2 2]}))}
-  get-potential-king-moves [state from-position]
+(defn get-potential-normal-king-moves
+  "Determines all potential moves for a king."
+  {:test (fn []
+           (is= (get-potential-normal-king-moves (s/create-state "p..."
+                                                                 "pk.."
+                                                                 ".qQ.")
+                                                 [1 1])
+                #{[0 1] [0 2] [1 2] [2 0] [2 2]})
+           ; Castle moves are excluded
+           (is= (get-potential-normal-king-moves (s/create-state "R...K...")
+                                                 [0 4])
+                #{[0 3] [0 5]}))}
+  [state from-position]
   {:pre [(s/king? (s/get-piece state from-position))]}
   (let [directions [[-1 -1] [0 -1] [1 -1] [-1 0] [1 0] [-1 1] [0 1] [1 1]]]
     (get-potential-moves-in-directions state from-position directions 1)))
 
-
 (defmulti get-potential-moves
-          ^{:doc "Returns all potentials moves for the piece at the given position"}
+          "Returns all potentials moves for the piece at the given position"
           (fn [state from-position]
             (:type (s/get-piece state from-position))))
 
@@ -227,7 +230,7 @@
   (get-potential-bishop-moves state from-position))
 
 (defmethod get-potential-moves :king [state from-position]
-  (get-potential-king-moves state from-position))
+  (get-potential-normal-king-moves state from-position))
 
 (defmethod get-potential-moves :knight [state from-position]
   (get-potential-knight-moves state from-position))
@@ -241,6 +244,19 @@
 (defmethod get-potential-moves :rook [state from-position]
   (get-potential-rook-moves state from-position))
 
+(defn in-check?
+  "Checks if the given player is in check."
+  {:test (fn []
+           (is (in-check? (s/create-state "R..k") :small))
+           (is-not (in-check? (s/create-state "R.qk") :small)))}
+  [state player-id]
+  (let [enemy-positions (s/get-position-of-pieces state (s/get-opponent-player-id state player-id))
+        king-position (s/get-king-position state player-id)]
+    (some (fn [p]
+            (seq-contains? (get-potential-moves state p) king-position))
+          enemy-positions)))
+
+
 (defn
   ^{:test (fn []
             (is (player-in-turn? (s/create-state "p..P") :large))
@@ -248,151 +264,76 @@
   player-in-turn? [state player-id]
   (= (s/player-in-turn state) player-id))
 
-(defn
-  ^{:doc  "Checks if the given player is in check."
-    :test (fn []
-            (is (in-check? (s/create-state "R..k") :small))
-            (is-not (in-check? (s/create-state "R.qk") :small)))}
-  in-check? [state player-id]
-  (let [enemy-positions (s/get-position-of-pieces state (s/get-opponent-player-id state player-id))
-        king-position (s/get-king-position state player-id)]
-    (some (fn [p]
-            (seq-contains? (get-potential-moves state p) king-position))
-          enemy-positions)))
-
-(defn
-  ^{:test (fn []
-            (is= (get-valid-moves (s/create-state "KR.q"
-                                                  "....")
-                                  [0 1])
-                 #{[0 2] [0 3]})
-            (is= (get-valid-moves (s/create-state "K..q"
-                                                  ".R..")
-                                  [1 1])
-                 #{[0 1]})
-            ; Pieces of players that are not in turn should not be able to move.
-            (is= (get-valid-moves (s/create-state "K..k")
-                                  [0 3])
-                 #{}))}
-  get-valid-moves [state from-position]
-  (let [moving-player (s/get-owner state from-position)]
-    (if (not (player-in-turn? state moving-player))
-      #{}
-      (->> (get-potential-moves state from-position)
-           (filter (fn [p]
-                     (let [potential-state (s/update-position state from-position p)]
-                       (not (in-check? potential-state moving-player)))))
-           (into #{})))))
-
-
-(defn
-  ^{:doc  "Determines if the given move is valid."
-    :test (fn []
-            (is (-> (s/create-state "N.."
-                                    "..."
-                                    "...")
-                    (valid-move? [0 0] [1 2])))
-            (is-not (-> (s/create-state "N.."
-                                        "..."
-                                        "...")
-                        (valid-move? [0 0] [1 1]))))}
-  valid-move? [state from-position to-position]
-  {:pre [(s/marked? state from-position)]}
-  (contains? (get-valid-moves state from-position) to-position))
-
-
-(defn
-  ^{:doc  "Makes a move for the given player."
-    :test (fn []
-            (is= (-> (s/create-state "R..")
-                     (move :large [0 0] [0 2])
-                     (s/get-board)
-                     (s/board->string))
-                 "..R")
-            ; Moved piece should be marked as moved
-            (is (-> (s/create-state "R..")
-                    (move :large [0 0] [0 2])
-                    (s/get-piece [0 2])
-                    (:moved?)))
-            (error? (-> (s/create-state "K..k")
-                        (move :small [0 3] [0 2]))))}
-  move [state player-id from-position to-position]
-  (when-not (player-in-turn? state player-id)
-    (i/error "The player " player-id " is not in turn."))
-  (when-not (valid-move? state from-position to-position)
-    (i/error "The move is not valid."))
-  (-> state
-      (s/update-position from-position to-position)
-      (s/mark-piece-as-moved to-position)
-      (s/update-player-in-turn)))
-
-
 (defn valid-castle?
   "Determines if a castle is valid."
   {:test (fn []
-            (is (-> (s/create-state "R...K...")
-                    (valid-castle? [0 4] [0 2])))
-            (is (-> (s/create-state "R...K..R")
-                    (valid-castle? [0 4] [0 6])))
-            (is (-> (s/create-state "R...K..R")
-                    (s/mark-piece-as-moved [0 0])
-                    (valid-castle? [0 4] [0 6])))
-            ;king is not going to correct square
-            (is-not (-> (s/create-state "R...K...")
-                        (valid-castle? [0 4] [0 1])))
-            (is-not (-> (s/create-state "R...K...")
-                        (valid-castle? [0 4] [0 3])))
-            (is-not (-> (s/create-state "....K..R"
-                                        "........")
-                        (valid-castle? [0 4] [1 6])))
-            (is-not (-> (s/create-state "R...K...")
-                        (valid-castle? [0 4] [0 6])))
-            (is-not (-> (s/create-state "R...K..P")
-                        (valid-castle? [0 4] [0 6])))
-            ; Castle is blocked by piece between rook and king
-            (is-not (-> (s/create-state "RN..K...")
-                        (valid-castle? [0 4] [0 2])))
-            ; Castle is blocked by piece attacking square that king must pass
-            (is-not (-> (s/create-state ".......n"
-                                        "....K..R")
-                        (valid-castle? [1 4] [1 6])))
-            ; Castle is blocked by king in check
-            (is-not (-> (s/create-state "..n....."
-                                        "....K..R")
-                        (valid-castle? [1 4] [1 6])))
-            ; Castle is blocked by moved rook
-            (is-not (-> (s/create-state "R...K...")
-                        (s/mark-piece-as-moved [0 0])
-                        (valid-castle? [0 4] [0 2])))
-            ; Castle is blocked by moved king
-            (is-not (-> (s/create-state "R...K...")
-                        (s/mark-piece-as-moved [0 4])
-                        (valid-castle? [0 4] [0 2]))))}
+           (is (-> (s/create-state "R...K...")
+                   (valid-castle? [0 4] [0 2])))
+           (is (-> (s/create-state "R...K..R")
+                   (valid-castle? [0 4] [0 6])))
+           (is (-> (s/create-state "R...K..R")
+                   (s/mark-piece-as-moved [0 0])
+                   (valid-castle? [0 4] [0 6])))
+           ;king is not going to correct square
+           (is-not (-> (s/create-state "R...K...")
+                       (valid-castle? [0 4] [0 1])))
+           (is-not (-> (s/create-state "R...K...")
+                       (valid-castle? [0 4] [0 3])))
+           (is-not (-> (s/create-state "....K..R"
+                                       "........")
+                       (valid-castle? [0 4] [1 6])))
+           (is-not (-> (s/create-state "R...K...")
+                       (valid-castle? [0 4] [0 6])))
+           (is-not (-> (s/create-state "R...K..P")
+                       (valid-castle? [0 4] [0 6])))
+           ; Castle is blocked by piece between rook and king
+           (is-not (-> (s/create-state "RN..K...")
+                       (valid-castle? [0 4] [0 2])))
+           ; Castle is blocked by piece attacking square that king must pass
+           (is-not (-> (s/create-state ".......n"
+                                       "....K..R")
+                       (valid-castle? [1 4] [1 6])))
+           ; Castle is blocked by king in check
+           (is-not (-> (s/create-state "..n....."
+                                       "....K..R")
+                       (valid-castle? [1 4] [1 6])))
+           ; Castle is blocked by moved rook
+           (is-not (-> (s/create-state "R...K...")
+                       (s/mark-piece-as-moved [0 0])
+                       (valid-castle? [0 4] [0 2])))
+           ; Castle is blocked by moved king
+           (is-not (-> (s/create-state "R...K...")
+                       (s/mark-piece-as-moved [0 4])
+                       (valid-castle? [0 4] [0 2])))
+           (is (-> (s/create-state "........" "........" "........" "........"
+                                   "........" "........" "PPPPPPPP" "R..K....")
+                   (valid-castle? [7 3] [7 1]))))}
   [state king-position king-to-position]
-  {:pre [(s/king? state king-position)]}
-  (let [king-position-change (map - king-position king-to-position)
-        direction (if (pos? (second (map - king-position king-to-position)))
-                    [0 -1]
-                    [0 1])
-        rook-position (if (= direction [0 -1])
-                        [(first king-position) 0]
-                        [(first king-position) 7])
-        rook (s/get-piece state rook-position)]
-    (and (not (in-check? state (:player-in-turn state)))
-         (or (= king-position-change [0 2]) (= king-position-change [0 -2]))
-         (not (:moved? (s/get-piece state king-position)))
-         (= (:type rook) :rook)
-         (not (:moved? rook))
-         (reduce (fn [valid? p]
-                   (and valid?
-                        (not (s/marked? state p))
-                        (not (in-check? (s/update-position state king-position p)
-                                        (:player-in-turn state)))))
-                 true
-                 [(map + king-position direction)
-                  (map + king-position direction direction)])
-         (or (= direction [0 1])
-             (not (s/marked? state [(first king-position) 1]))))))
+  (and (s/king? state king-position)
+       (let [king-position-change (map - king-position king-to-position)
+             direction (if (pos? (second (map - king-position king-to-position)))
+                         [0 -1]
+                         [0 1])
+             rook-position (if (= direction [0 -1])
+                             [(first king-position) 0]
+                             [(first king-position) 7])
+             rook (s/get-piece state rook-position)]
+         (and (not (in-check? state (:player-in-turn state)))
+              (or (= king-position-change [0 2]) (= king-position-change [0 -2]))
+              (not (:moved? (s/get-piece state king-position)))
+              (= (:type rook) :rook)
+              (not (:moved? rook))
+              (reduce (fn [valid? p]
+                        (and valid?
+                             (not (s/marked? state p))
+                             (not (in-check? (s/update-position state king-position p)
+                                             (:player-in-turn state)))))
+                      true
+                      [(map + king-position direction)
+                       (map + king-position direction direction)])
+              (or (= direction [0 1])
+                  (not (s/marked? state [(first king-position) 1])))))))
+
 
 
 (defn
@@ -428,7 +369,107 @@
         (s/update-player-in-turn))))
 
 
+(defn
+  ^{:test (fn []
+            (is= (get-valid-moves (s/create-state "KR.q"
+                                                  "....")
+                                  [0 1])
+                 #{[0 2] [0 3]})
+            (is= (get-valid-moves (s/create-state "K..q"
+                                                  ".R..")
+                                  [1 1])
+                 #{[0 1]})
+            (is= (-> (s/create-state "R...K...")
+                     (get-valid-moves [0 4]))
+                 #{[0 2] [0 3] [0 5]})
+            (is= (-> (s/create-state "....K..R")
+                     (get-valid-moves [0 4]))
+                 #{[0 3] [0 5] [0 6]})
+            ; Pieces of players that are not in turn should not be able to move.
+            (is= (get-valid-moves (s/create-state "K..k")
+                                  [0 3])
+                 #{}))}
+  get-valid-moves [state from-position]
+  (let [moving-player (s/get-owner state from-position)]
+    (if (not (player-in-turn? state moving-player))
+      #{}
+      (let [ordinary-moves (->> (get-potential-moves state from-position)
+                                (filter (fn [p]
+                                          (let [potential-state (s/update-position state from-position p)]
+                                            (not (in-check? potential-state moving-player)))))
+                                (into #{}))]
+        (condp = (:type (s/get-piece state from-position))
 
+          :king
+          (do (println "I'am here")
+              (println (reduce (fn [moves position]
+                                 (if (valid-castle? state from-position position)
+                                   (conj moves position)
+                                   moves))
+                               ordinary-moves
+                               (map (fn [position] (map + position from-position)) [[0 -2] [0 2]])))
+              (reduce (fn [moves position]
+                        (if (valid-castle? state from-position position)
+                          (conj moves position)
+                          moves))
+                      ordinary-moves
+                      (map (fn [position] (map + position from-position)) [[0 -2] [0 2]])))
+
+          (do (println "The usual")
+              ordinary-moves))))))
+
+
+(defn
+  ^{:doc  "Determines if the given move is valid."
+    :test (fn []
+            (is (-> (s/create-state "N.."
+                                    "..."
+                                    "...")
+                    (valid-move? [0 0] [1 2])))
+            (is (-> (s/create-state "R...K...")
+                    (valid-move? [0 4] [0 2])))
+            (is-not (-> (s/create-state "N.."
+                                        "..."
+                                        "...")
+                        (valid-move? [0 0] [1 1]))))}
+  valid-move? [state from-position to-position]
+  {:pre [(s/marked? state from-position)]}
+  (contains? (get-valid-moves state from-position) to-position))
+
+(defn
+  ^{:doc  "Makes a move for the given player."
+    :test (fn []
+            (is= (-> (s/create-state "R..")
+                     (move :large [0 0] [0 2])
+                     (s/get-board)
+                     (s/board->string))
+                 "..R")
+            ; Moved piece should be marked as moved
+            (is (-> (s/create-state "R..")
+                    (move :large [0 0] [0 2])
+                    (s/get-piece [0 2])
+                    (:moved?)))
+            ; A castle is also a move
+            (is (-> (s/create-state "R...K...")
+                    (move :large [0 4] [0 2])
+                    (s/get-piece [0 3])
+                    (s/rook?)))
+            (error? (-> (s/create-state "K..k")
+                        (move :small [0 3] [0 2]))))}
+  move [state player-id from-position to-position]
+  (when-not (player-in-turn? state player-id)
+    (i/error "The player " player-id " is not in turn."))
+  (when-not (valid-move? state from-position to-position)
+    (i/error "The move is not valid."))
+  (cond (valid-castle? state from-position to-position)
+        (do (println "A castle")
+            (castle state player-id from-position to-position))
+
+        :else
+        (-> state
+            (s/update-position from-position to-position)
+            (s/mark-piece-as-moved to-position)
+            (s/update-player-in-turn))))
 
 
 
