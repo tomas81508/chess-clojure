@@ -25,12 +25,12 @@
           to-position (:to-position params)
           player-id (keyword (:player-id params))]
       (time (game-response (game->view-game (move! player-id from-position to-position))))))
-  (POST "/castle" {body :body}
-    (let [params (json/read-json (slurp body))
-          from-position (:from-position params)
-          to-position (:to-position params)
-          player-id (keyword (:player-id params))]
-      (time (game-response (game->view-game (castle! player-id from-position to-position))))))
+  ;(POST "/castle" {body :body}
+  ;  (let [params (json/read-json (slurp body))
+  ;        from-position (:from-position params)
+  ;        to-position (:to-position params)
+  ;        player-id (keyword (:player-id params))]
+  ;    (time (game-response (game->view-game (castle! player-id from-position to-position))))))
   (POST "/undo" {body :body}
     (let [params (json/read-json (slurp body))
           player-id (keyword (:player-id params))]
