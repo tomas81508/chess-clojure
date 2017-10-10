@@ -259,7 +259,8 @@
 
 (defn player-in-turn?
   {:test (fn []
-           (is (player-in-turn? (s/create-state "p..P") :large))
+           (is (-> (s/create-state "p..P")
+                   (player-in-turn? :large)))
            (is-not (player-in-turn? (s/create-state "p..P") :small)))}
   [state player-id]
   (= (s/player-in-turn state) player-id))

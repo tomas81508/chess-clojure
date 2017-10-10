@@ -18,7 +18,7 @@
 (s/def ::players (s/and (s/+ ::player)
                         (fn [x] (= (count x) 2))))
 
-(s/def ::type #{:rook :knight :bishop :pawn :queen :king})
+(s/def :chess.piece/type #{:rook :knight :bishop :pawn :queen :king})
 
 (s/def ::owner ::id)
 
@@ -28,7 +28,7 @@
 (s/def ::valid-moves (s/and set?
                             (s/* ::coordinates)))
 
-(s/def ::piece (s/or :something (s/keys :req-un [::type ::owner ::valid-moves ::id])
+(s/def ::piece (s/or :something (s/keys :req-un [:chess.piece/type ::owner ::valid-moves ::id])
                      :nothing nil?))
 
 
@@ -36,4 +36,14 @@
 
 (s/def ::board (s/+ ::cell))
 
-(s/def ::game (s/keys :req-un [::playerInTurn ::players ::board]))
+(s/def ::piece-type :chess.piece/type)
+
+(s/def ::from-coordinates ::coordinates)
+
+(s/def ::to-coordinates ::coordinates)
+
+(s/def ::move (s/keys :req-un [::piece-type ::from-coordinates ::to-coordinates]))
+
+(s/def ::previous-moves (s/* ::move))
+
+(s/def ::game (s/keys :req-un [::playerInTurn ::players ::board ::previous-moves]))
