@@ -36,9 +36,9 @@
           player-id (keyword (:player-id params))]
       (time (game-response (game->view-game (undo! player-id))))))
   (POST "/redo" {body :body}
-        (let [params (json/read-json (slurp body))
-              player-id (keyword (:player-id params))]
-             (time (game-response (game->view-game (redo! player-id)))))))
+    (let [params (json/read-json (slurp body))
+          player-id (keyword (:player-id params))]
+      (time (game-response (game->view-game (redo! player-id)))))))
 
 
 ;; Starting & Stopping

@@ -42,7 +42,7 @@
 
 (s/def ::to-coordinates ::coordinates)
 
-(s/def ::move (s/keys :req-un [::piece-type ::from-coordinates ::to-coordinates]))
+(s/def ::move (s/keys :req-un [::piece-type ::from-coordinates ::to-coordinates ::owner]))
 
 (s/def ::previous-moves (s/* ::move))
 

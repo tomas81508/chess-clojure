@@ -80,10 +80,9 @@
                                   {:row 7, :column 7, :piece {:type :rook, :owner :large :valid-moves #{} :id "32"}}]})
            (let [previous-moves (-> (history/create-state)
                                     (history/move :large [6 0] [5 0])
-                                    (game->view-game)
-                                    (:previous-moves))]
-             (is (valid? :chess.spec/previous-moves previous-moves))
-             (is= previous-moves [{:piece-type :pawn :from-coordinates [6 0] :to-coordinates [5 0]}])))}
+                                    (history/get-previous-moves))]
+             (is= previous-moves [{:piece-type :pawn :owner :large :from-coordinates [6 0] :to-coordinates [5 0]}])
+             (valid? :chess.spec/previous-moves previous-moves)))}
   [game]
   (let [game-state (history/get-current-game-state game)]
     {:playerInTurn   (:player-in-turn game-state)
