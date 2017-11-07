@@ -4,10 +4,6 @@
 (s/def ::coordinate (s/and int?
                            (fn [x] (<= 0 x 7))))
 
-(s/def ::row ::coordinate)
-
-(s/def ::column ::coordinate)
-
 (s/def ::id (s/or :keyword keyword?
                   :string string?))
 
@@ -32,7 +28,7 @@
                      :nothing nil?))
 
 
-(s/def ::cell (s/keys :req-un [::row ::column ::piece]))
+(s/def ::cell (s/keys :req-un [::coordinates ::piece]))
 
 (s/def ::board (s/+ ::cell))
 

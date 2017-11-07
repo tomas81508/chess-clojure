@@ -37,8 +37,8 @@
                                                             ".n..."
                                                             "....."
                                                             "Q.p..")
-                                            [1 1])
-                #{[0 3] [2 3] [3 0]}))}
+                                            [1 2])
+                #{[3 3] [3 1] [0 0]}))}
   [state from-position]
   {:pre [(s/knight? (s/get-piece state from-position))]}
   (->> [[-2 -1] [-2 1] [2 -1] [2 1] [-1 2] [1 2] [-1 -2] [1 -2]]
@@ -56,20 +56,20 @@
   "Returns a set of potentials move in the given direction at most of the distance steps from the given position."
   {:test (fn []
            ; Movement ending by out of board
-           (is= (get-potential-moves-in-directions (s/create-state "q..") [0 0] [[0 1]])
-                #{[0 1] [0 2]})
+           (is= (get-potential-moves-in-directions (s/create-state "q..") [0 0] [[1 0]])
+                #{[1 0] [2 0]})
            ; Movement ending on enemy player's piece
-           (is= (get-potential-moves-in-directions (s/create-state "q.K.") [0 0] [[0 1]])
-                #{[0 1] [0 2]})
+           (is= (get-potential-moves-in-directions (s/create-state "q.K.") [0 0] [[1 0]])
+                #{[1 0] [2 0]})
            ; Movement ending on own player's piece
-           (is= (get-potential-moves-in-directions (s/create-state "q..k.") [0 0] [[0 1]])
-                #{[0 1] [0 2]})
+           (is= (get-potential-moves-in-directions (s/create-state "q..k.") [0 0] [[1 0]])
+                #{[1 0] [2 0]})
            ; Assuming that the queen only could move two steps
-           (is= (get-potential-moves-in-directions (s/create-state "q...k.") [0 0] [[0 1]] 2)
-                #{[0 1] [0 2]})
+           (is= (get-potential-moves-in-directions (s/create-state "q...k.") [0 0] [[1 0]] 2)
+                #{[1 0] [2 0]})
            ; Assuming that the queen only could move two steps
-           (is= (get-potential-moves-in-directions (s/create-state "q..Pk.") [0 0] [[0 1]] 2)
-                #{[0 1] [0 2]}))}
+           (is= (get-potential-moves-in-directions (s/create-state "q..Pk.") [0 0] [[1 0]] 2)
+                #{[1 0] [2 0]}))}
 
   ([state from-position directions]
    (get-potential-moves-in-directions state from-position directions :unlimited))
@@ -108,13 +108,12 @@
                                                            ".q.k."
                                                            "..B.."
                                                            ".....")
-                                           [1 1])
-                #{[0 0] [0 1] [0 2]
-                  [1 0] [1 2]
-                  [2 0] [2 1] [2 2]
-                  [3 1]}))}
+                                           [1 2])
+                #{[0 1] [0 2] [0 3]
+                  [1 0] [1 1] [1 3]
+                  [2 1] [2 2] [2 3]}))}
   [state from-position]
-  {pre [(s/queen? (s/get-piece state from-position))]}
+  {:pre [(s/queen? (s/get-piece state from-position))]}
   (get-potential-moves-in-directions state
                                      from-position
                                      [[-1 -1] [0 -1] [1 -1] [-1 0] [1 0] [-1 1] [0 1] [1 1]]))
@@ -126,8 +125,8 @@
                                                           ".r.k."
                                                           "..B.."
                                                           ".....")
-                                          [1 1])
-                #{[0 1] [1 0] [1 2] [2 1] [3 1]}))}
+                                          [1 2])
+                #{[0 2] [1 0] [1 1] [1 3] [2 2]}))}
   [state from-position]
   {:pre [(s/rook? (s/get-piece state from-position))]}
   (get-potential-moves-in-directions state
@@ -142,8 +141,8 @@
                                                             ".b.k."
                                                             "B...."
                                                             ".....")
-                                            [1 1])
-                #{[0 0] [0 2] [2 0] [2 2] [3 3]}))}
+                                            [1 2])
+                #{[0 3] [2 1] [3 0] [2 3] [0 1]}))}
   [state from-position]
   {:pre [(s/bishop? (s/get-piece state from-position))]}
   (get-potential-moves-in-directions state
@@ -160,23 +159,23 @@
                                                           "..."
                                                           ".P."
                                                           "...")
-                                          [3 1])
-                #{[1 1] [2 1]})
+                                          [1 1])
+                #{[1 2] [1 3]})
            (is= (get-potential-pawn-moves (s/create-state "..."
                                                           ".q."
                                                           ".P."
                                                           "...")
-                                          [2 1])
+                                          [1 1])
                 #{})
            (is= (get-potential-pawn-moves (s/create-state "..."
                                                           "qk."
                                                           ".P."
                                                           "...")
-                                          [2 1])
-                #{[1 0]})
+                                          [1 1])
+                #{[0 2]})
            (is= (get-potential-pawn-moves (s/create-state "k"
                                                           "P")
-                                          [1 0])
+                                          [0 0])
                 #{}))}
   [state from-position]
   {:pre [(s/pawn? (s/get-piece state from-position))]}
@@ -194,7 +193,7 @@
           :else
           #{forward-position})
         ((fn [positions]
-           (let [test-positions (map (fn [d] (map + forward-position d)) [[0 1] [0 -1]])]
+           (let [test-positions (map (fn [d] (map + forward-position d)) [[1 0] [-1 0]])]
              (reduce (fn [positions test-position]
                        (if (and (s/marked? state test-position)
                                 (not= (:owner pawn)
@@ -211,11 +210,11 @@
                                                                  "pk.."
                                                                  ".qQ.")
                                                  [1 1])
-                #{[0 1] [0 2] [1 2] [2 0] [2 2]})
+                #{[0 0] [1 2] [2 0] [2 1] [2 2]})
            ; Castle moves are excluded
            (is= (get-potential-normal-king-moves (s/create-state "R...K...")
-                                                 [0 4])
-                #{[0 3] [0 5]}))}
+                                                 [4 0])
+                #{[3 0] [5 0]}))}
   [state from-position]
   {:pre [(s/king? (s/get-piece state from-position))]}
   (let [directions [[-1 -1] [0 -1] [1 -1] [-1 0] [1 0] [-1 1] [0 1] [1 1]]]
@@ -269,79 +268,85 @@
   "Determines if a castle is valid."
   {:test (fn []
            (is (-> (s/create-state "R...K...")
-                   (valid-castle? [0 4] [0 2])))
+                   (valid-castle? [4 0] [2 0])))
            (is (-> (s/create-state "R...K..R")
-                   (valid-castle? [0 4] [0 6])))
+                   (valid-castle? [4 0] [6 0])))
            (is (-> (s/create-state "R...K..R")
                    (s/mark-piece-as-moved [0 0])
-                   (valid-castle? [0 4] [0 6])))
+                   (valid-castle? [4 0] [6 0])))
            ;king is not going to correct square
            (is-not (-> (s/create-state "R...K...")
-                       (valid-castle? [0 4] [0 1])))
+                       (valid-castle? [4 0] [1 0])))
            (is-not (-> (s/create-state "R...K...")
-                       (valid-castle? [0 4] [0 3])))
+                       (valid-castle? [4 0] [3 0])))
            (is-not (-> (s/create-state "....K..R"
                                        "........")
-                       (valid-castle? [0 4] [1 6])))
+                       (valid-castle? [4 1] [6 0])))
            (is-not (-> (s/create-state "R...K...")
-                       (valid-castle? [0 4] [0 6])))
+                       (valid-castle? [4 0] [6 0])))
            (is-not (-> (s/create-state "R...K..P")
-                       (valid-castle? [0 4] [0 6])))
+                       (valid-castle? [4 0] [6 0])))
            ; Castle is blocked by piece between rook and king
            (is-not (-> (s/create-state "RN..K...")
-                       (valid-castle? [0 4] [0 2])))
+                       (valid-castle? [4 0] [2 0])))
            ; Castle is blocked by piece attacking square that king must pass
            (is-not (-> (s/create-state ".......n"
                                        "....K..R")
-                       (valid-castle? [1 4] [1 6])))
+                       (valid-castle? [4 0] [6 0])))
            ; Castle is blocked by king in check
            (is-not (-> (s/create-state "..n....."
                                        "....K..R")
-                       (valid-castle? [1 4] [1 6])))
+                       (valid-castle? [4 0] [6 0])))
            ; Castle is blocked by moved rook
            (is-not (-> (s/create-state "R...K...")
                        (s/mark-piece-as-moved [0 0])
-                       (valid-castle? [0 4] [0 2])))
+                       (valid-castle? [4 0] [2 0])))
            ; Castle is blocked by moved king
            (is-not (-> (s/create-state "R...K...")
-                       (s/mark-piece-as-moved [0 4])
-                       (valid-castle? [0 4] [0 2])))
-           (is (-> (s/create-state "........" "........" "........" "........"
-                                   "........" "........" "PPPPPPPP" "R..K....")
-                   (valid-castle? [7 3] [7 1]))))}
+                       (s/mark-piece-as-moved [4 0])
+                       (valid-castle? [4 0] [2 0])))
+           (is (-> (s/create-state "........"
+                                   "........"
+                                   "........"
+                                   "........"
+                                   "........"
+                                   "........"
+                                   "PPPPPPPP"
+                                   "R..K....")
+                   (valid-castle? [3 0] [1 0]))))}
   [state king-position king-to-position]
   (and (s/king? state king-position)
-       (let [king-position-change (map - king-position king-to-position)
-             direction (if (pos? (second (map - king-position king-to-position)))
-                         [0 -1]
-                         [0 1])
-             rook-position (if (= direction [0 -1])
-                             [(first king-position) 0]
-                             [(first king-position) 7])
+       (let [king-position-change (map - king-to-position king-position)
+             direction (if (pos? (first (map - king-to-position king-position)))
+                         [1 0]
+                         [-1 0])
+             rook-position (if (= direction [-1 0])
+                             [0 (second king-position)]
+                             [7 (second king-position)])
              rook (s/get-piece state rook-position)]
          (and (not (in-check? state (:player-in-turn state)))
-              (or (= king-position-change [0 2]) (= king-position-change [0 -2]))
+              (or (= king-position-change [2 0]) (= king-position-change [-2 0]))
               (not (:moved? (s/get-piece state king-position)))
               (= (:type rook) :rook)
               (not (:moved? rook))
-              (reduce (fn [valid? p]
+              (reduce (fn [valid? c]
                         (and valid?
-                             (not (s/marked? state p))
-                             (not (in-check? (s/update-position state king-position p)
+                             (not (s/marked? state c))
+                             (not (in-check? (s/update-position state king-position c)
                                              (:player-in-turn state)))))
                       true
                       [(map + king-position direction)
                        (map + king-position direction direction)])
-              (or (= direction [0 1])
-                  (not (s/marked? state [(first king-position) 1])))))))
+              (or (= direction [1 0])
+                  (not (s/marked? state [1 (second king-position)])))))))
 
 
 (defn castle
   {:test (fn []
            (let [state (-> (s/create-state "R...K..R")
-                           (castle :large [0 4] [0 2]))
-                 king-piece (s/get-piece state [0 2])
-                 rook-piece (s/get-piece state [0 3])]
+                           (castle :large [4 0] [2 0]))
+                 king-piece (s/get-piece state [2 0])
+                 rook-piece (s/get-piece state [3 0])]
              (is= (:type king-piece) :king)
              (is (:moved? king-piece))
              (is= (:type rook-piece) :rook)
@@ -351,15 +356,15 @@
     (i/error "The player " player-id " is not in turn."))
   (when-not (valid-castle? state king-position king-to-position)
     (i/error "The move is not valid."))
-  (let [direction (if (pos? (second (map - king-position king-to-position)))
-                    [0 -1]
-                    [0 1])
-        rook-position (if (= direction [0 -1])
-                        [(first king-position) 0]
-                        [(first king-position) 7])
-        rook-to-position (if (= direction [0 -1])
-                           [(first king-position) 3]
-                           [(first king-position) 5])]
+  (let [direction (if (pos? (first (map - king-to-position king-position)))
+                    [1 0]
+                    [-1 0])
+        rook-position (if (= direction [-1 0])
+                        [0 (second king-position)]
+                        [7 (second king-position)])
+        rook-to-position (if (= direction [-1 0])
+                           [3 (second king-position)]
+                           [5 (second king-position)])]
     (-> state
         (s/update-position king-position king-to-position)
         (s/mark-piece-as-moved king-to-position)
@@ -372,21 +377,21 @@
   {:test (fn []
            (is= (get-valid-moves (s/create-state "KR.q"
                                                  "....")
-                                 [0 1])
-                #{[0 2] [0 3]})
+                                 [1 1])
+                #{[2 1] [3 1]})
            (is= (get-valid-moves (s/create-state "K..q"
                                                  ".R..")
-                                 [1 1])
-                #{[0 1]})
+                                 [1 0])
+                #{[1 1]})
            (is= (-> (s/create-state "R...K...")
-                    (get-valid-moves [0 4]))
-                #{[0 2] [0 3] [0 5]})
+                    (get-valid-moves [4 0]))
+                #{[2 0] [3 0] [5 0]})
            (is= (-> (s/create-state "....K..R")
-                    (get-valid-moves [0 4]))
-                #{[0 3] [0 5] [0 6]})
+                    (get-valid-moves [4 0]))
+                #{[3 0] [5 0] [6 0]})
            ; Pieces of players that are not in turn should not be able to move.
            (is= (get-valid-moves (s/create-state "K..k")
-                                 [0 3])
+                                 [3 0])
                 #{}))}
   [state from-position]
   (let [moving-player (s/get-owner state from-position)]
@@ -405,7 +410,7 @@
                       (conj moves position)
                       moves))
                   ordinary-moves
-                  (map (fn [position] (map + position from-position)) [[0 -2] [0 2]]))
+                  (map (fn [position] (map + position from-position)) [[-2 0] [2 0]]))
 
           ordinary-moves)))))
 
@@ -416,13 +421,13 @@
            (is (-> (s/create-state "N.."
                                    "..."
                                    "...")
-                   (valid-move? [0 0] [1 2])))
+                   (valid-move? [0 2] [2 1])))
            (is (-> (s/create-state "R...K...")
-                   (valid-move? [0 4] [0 2])))
+                   (valid-move? [4 0] [2 0])))
            (is-not (-> (s/create-state "N.."
                                        "..."
                                        "...")
-                       (valid-move? [0 0] [1 1]))))}
+                       (valid-move? [0 2] [1 1]))))}
   [state from-position to-position]
   {:pre [(s/marked? state from-position)]}
   (contains? (get-valid-moves state from-position) to-position))
@@ -431,22 +436,22 @@
   "Makes a move for the given player."
   {:test (fn []
            (is= (-> (s/create-state "R..")
-                    (move :large [0 0] [0 2])
+                    (move :large [0 0] [2 0])
                     (s/get-board)
                     (s/board->string))
                 "..R")
            ; Moved piece should be marked as moved
            (is (-> (s/create-state "R..")
-                   (move :large [0 0] [0 2])
-                   (s/get-piece [0 2])
+                   (move :large [0 0] [2 0])
+                   (s/get-piece [2 0])
                    (:moved?)))
            ; A castle is also a move
            (is (-> (s/create-state "R...K...")
-                   (move :large [0 4] [0 2])
-                   (s/get-piece [0 3])
+                   (move :large [4 0] [2 0])
+                   (s/get-piece [3 0])
                    (s/rook?)))
            (error? (-> (s/create-state "K..k")
-                       (move :small [0 3] [0 2]))))}
+                       (move :small [3 0] [2 0]))))}
   [state player-id from-position to-position]
   (when-not (player-in-turn? state player-id)
     (i/error "The player " player-id " is not in turn."))
@@ -461,25 +466,11 @@
             (s/mark-piece-as-moved to-position)
             (s/update-player-in-turn))))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 (defn get-pieces-by
   {:test (fn []
            (is= (get-pieces-by (s/create-state ".Kq.pp.") {:player-id :small :type :pawn})
-                {[0 4] {:type :pawn :owner :small :moved? false :id "3"}
-                 [0 5] {:type :pawn :owner :small :moved? false :id "4"}}))}
+                {[4 0] {:type :pawn :owner :small :moved? false :id "3"}
+                 [5 0] {:type :pawn :owner :small :moved? false :id "4"}}))}
   [state {player-id :player-id type :type}]
   (reduce (fn [map key]
             (if (or (nil? (get map key))
@@ -504,44 +495,57 @@
 (defn algebraic-notation->coordinates
   "This notation ..."
   {:test (fn []
-           (is= (algebraic-notation->coordinates "a8") [0 0])
-           (is= (algebraic-notation->coordinates "h1") [7 7])
-           (is= (algebraic-notation->coordinates "e4") [4 4])
-           (is= (algebraic-notation->coordinates "Nf6") [2 5])
-           (is= (algebraic-notation->coordinates "Rfe8") [0 4]))} ; moving a Rook to e8 from the column f
+           (is= (algebraic-notation->coordinates "a8") [0 7])
+           (is= (algebraic-notation->coordinates "h1") [7 0])
+           (is= (algebraic-notation->coordinates "e4") [4 3])
+           (is= (algebraic-notation->coordinates "Nf6") [5 5])
+           (is= (algebraic-notation->coordinates "Rfe8") [4 7]))} ; moving a Rook to e8 from the column f
 
   [algebraic-move]
   (let [position (re-find #"[a-h][1-8]" algebraic-move)]
-    [(- 7 (- (int (second position)) 49)) (letter-column->int (first position))]))
-
+    [(letter-column->int (first position)) (- (int (second position)) 49)]))
 
 (defn an-algebraic-notation->move-data
   {:test (fn []
            (is= (an-algebraic-notation->move-data (create-classic-game-state) "e4")
-                {:type :move :from-position [6 4] :to-position [4 4]})
+                {:type :move :from-position [4 1] :to-position [4 3]})
            (is= (an-algebraic-notation->move-data (-> (create-classic-game-state)
-                                                      (move :large [6 4] [4 4]))
+                                                      (move :large [4 1] [4 3]))
                                                   "Nf6")
-                {:type :move :from-position [0 6] :to-position [2 5]})
-           (is= (an-algebraic-notation->move-data (s/create-state ".." ".." ".." ".." ".." ".." "R." ".R")
+                {:type :move :from-position [6 7] :to-position [5 5]})
+           (is= (an-algebraic-notation->move-data (s/create-state ".."
+                                                                  ".."
+                                                                  ".."
+                                                                  ".."
+                                                                  ".."
+                                                                  ".."
+                                                                  "R."
+                                                                  ".R")
                                                   "Raa1")
-                {:type :move :from-position [6 0] :to-position [7 0]})
-           (is= (an-algebraic-notation->move-data (s/create-state ".." ".." ".." ".." ".." ".." "R." ".R")
+                {:type :move :from-position [0 1] :to-position [0 0]})
+           (is= (an-algebraic-notation->move-data (s/create-state ".."
+                                                                  ".."
+                                                                  ".."
+                                                                  ".."
+                                                                  ".."
+                                                                  ".."
+                                                                  "R."
+                                                                  ".R")
                                                   "R1a1")
-                {:type :move :from-position [7 1] :to-position [7 0]})
-           (is= (an-algebraic-notation->move-data (s/create-state "R...K...") "O-O")
-                {:type :castle :from-position [0 4] :to-position [0 6]})
+                {:type :move :from-position [1 0] :to-position [0 0]})
+           (is= (an-algebraic-notation->move-data (s/create-state "....K..R") "O-O")
+                {:type :castle :from-position [4 0] :to-position [6 0]})
            (is= (an-algebraic-notation->move-data (s/create-state "R...K...") "O-O-O")
-                {:type :castle :from-position [0 4] :to-position [0 2]}))}
+                {:type :castle :from-position [4 0] :to-position [2 0]}))}
   [state algebraic-notation]
   (let [player-id (:player-in-turn state)
-        ; row for castle
-        row (if (= (s/get-direction state player-id) [1 0]) 7 0)]
+        ; y for castle
+        y (if (= (s/get-direction state player-id) [0 1]) 0 7)]
     (cond (= algebraic-notation "O-O-O")
-          {:type :castle :from-position [row 4] :to-position [row 2]}
+          {:type :castle :from-position [4 y] :to-position [2 y]}
 
           (= algebraic-notation "O-O")
-          {:type :castle :from-position [row 4] :to-position [row 6]}
+          {:type :castle :from-position [4 y] :to-position [6 y]}
 
           :else
           (let [piece-type (condp = (str (first algebraic-notation))
@@ -561,15 +565,15 @@
                                 (first from-positions)
                                 (let [row-or-column (re-find #"[a-z]|[0-9]" algebraic-notation)]
                                   (cond (re-find #"[1-8]" row-or-column)
-                                        (let [row (- 7 (dec (read-string row-or-column)))]
+                                        (let [y (dec (read-string row-or-column))]
                                           (->> from-positions
-                                               (filter (fn [p] (= (first p) row)))
+                                               (filter (fn [p] (= (second p) y)))
                                                (first)))
 
                                         (re-find #"[a-h]" row-or-column)
                                         (let [column (letter-column->int row-or-column)]
                                           (->> from-positions
-                                               (filter (fn [p] (= (second p) column)))
+                                               (filter (fn [p] (= (first p) column)))
                                                (first)))
 
                                         :else
@@ -580,24 +584,24 @@
 (defn algebraic-notation->move-data
   {:test (fn []
            (is= (algebraic-notation->move-data ["e4" "Nf6"])
-                [{:type :move :from-position [6 4] :to-position [4 4]}
-                 {:type :move :from-position [0 6] :to-position [2 5]}])
+                [{:type :move :from-position [4 1] :to-position [4 3]}
+                 {:type :move :from-position [6 7] :to-position [5 5]}])
            (is= (algebraic-notation->move-data (take 15 (get-game-moves (get-Ficher-Spassky-game))))
-                [{:type :move :from-position [6 4] :to-position [4 4]}
-                 {:type :move :from-position [0 6] :to-position [2 5]}
-                 {:type :move :from-position [4 4] :to-position [3 4]}
-                 {:type :move :from-position [2 5] :to-position [3 3]}
-                 {:type :move :from-position [6 3] :to-position [4 3]}
-                 {:type :move :from-position [1 3] :to-position [2 3]}
-                 {:type :move :from-position [7 6] :to-position [5 5]}
-                 {:type :move :from-position [1 6] :to-position [2 6]}
-                 {:type :move :from-position [7 5] :to-position [4 2]}
-                 {:type :move :from-position [3 3] :to-position [2 1]}
-                 {:type :move :from-position [4 2] :to-position [5 1]}
-                 {:type :move :from-position [0 5] :to-position [1 6]}
-                 {:type :move :from-position [7 1] :to-position [6 3]}
-                 {:type :castle :from-position [7 4] :to-position [7 6]}
-                 {:type :move :from-position [6 7] :to-position [5 7]}]))}
+                [{:type :move :from-position [4 1] :to-position [4 3]}
+                 {:type :move :from-position [6 7] :to-position [5 5]}
+                 {:type :move :from-position [4 3] :to-position [4 4]}
+                 {:type :move :from-position [5 5] :to-position [3 4]}
+                 {:type :move :from-position [3 1] :to-position [3 3]}
+                 {:type :move :from-position [3 6] :to-position [3 5]}
+                 {:type :move :from-position [6 0] :to-position [5 2]}
+                 {:type :move :from-position [6 6] :to-position [6 5]}
+                 {:type :move :from-position [5 0] :to-position [2 3]}
+                 {:type :move :from-position [3 4] :to-position [1 5]}
+                 {:type :move :from-position [2 3] :to-position [1 2]}
+                 {:type :move :from-position [5 7] :to-position [6 6]}
+                 {:type :move :from-position [1 0] :to-position [3 1]}
+                 {:type :castle :from-position [4 7] :to-position [6 7]}
+                 {:type :move :from-position [7 1] :to-position [7 2]}]))}
   [algebraic-moves]
   (second
     (let [state (create-classic-game-state)]

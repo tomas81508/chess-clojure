@@ -55,9 +55,9 @@
 (defn move
   {:test (fn []
            (let [state (-> (create-state)
-                           (move :large [6 0] [5 0])
+                           (move :large [0 1] [0 2])
                            (undo)
-                           (move :large [6 1] [5 1]))]
+                           (move :large [1 1] [1 2]))]
              (is= (count (get-previous-moves state))
                   1)))}
   [game player-id from-position to-position]
