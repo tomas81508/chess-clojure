@@ -9,18 +9,33 @@
     [ysera.error :refer [error]]))
 (import [java.io ByteArrayInputStream ByteArrayOutputStream])
 
-(defonce websocket-atom (atom {:channels #{}}))
+(def websocket-atom (atom {:channels {}}))
 
 (defn get-client-channels []
-  (:channels (deref websocket-atom)))
+  (keys (:channels (deref websocket-atom))))
+
+(comment (count (:channels (deref websocket-atom))))
+
+(defn uuid [] (str (java.util.UUID/randomUUID)))
+
+(defn get-player-id [channel]
+  (get-in (deref websocket-atom)
+          [:channels channel :game-player-id]))
 
 (defn connect! [channel]
   (println "client connected")
-  (swap! websocket-atom update :channels conj channel))
+  (swap! websocket-atom update :channels (fn [channels]
+                                           (assoc channels channel (merge {:channel channel
+                                                                           :id      (uuid)}
+                                                                          (condp = (count channels)
+                                                                            0 {:game-player-id :large}
+                                                                            1 {:game-player-id :small}
+                                                                            nil))))))
 
 (defn disconnect! [channel status]
   (println "client disconnected:" status)
-  (swap! websocket-atom update :channels (fn [channels] (remove #{channel} channels))))
+  (swap! websocket-atom update :channels (fn [channels]
+                                           (dissoc channels channel))))
 
 (defn transit-write [x]
   (let [baos (ByteArrayOutputStream.)
@@ -32,7 +47,7 @@
 
 (defn notify-clients [msg]
   (doseq [channel (get-client-channels)]
-    (send! channel (transit-write msg))))
+    (send! channel (transit-write (merge msg {:player-id (get-player-id channel)})))))
 
 (add-watch chess.games/game-atom
            :websocket-client-notifier
@@ -75,24 +90,21 @@
 ;      (time (game-response (game->view-game (redo! player-id)))))))
 
 (defn handle-client-action
-  [{action :action data :data}]
+  [{action :action data :data} player-id]
   (condp = action
     "create-game"
     (create-game!)
 
     "move-piece"
     (let [from-position (:from-position data)
-          to-position (:to-position data)
-          player-id (:player-id data)]
+          to-position (:to-position data)]
       (move! player-id from-position to-position))
 
     "undo"
-    (let [player-id (:player-id data)]
-      (undo! player-id))
+    (undo! player-id)
 
     "redo"
-    (let [player-id (:player-id data)]
-      (redo! player-id))
+    (redo! player-id)
 
     (error "Unknown action:" action)))
 
@@ -103,12 +115,14 @@
                 (on-close channel (fn [status] (disconnect! channel status)))
                 (on-receive channel (fn [data]
                                       (println data)
-                                      (-> data
-                                          (.getBytes "UTF-8")
-                                          (ByteArrayInputStream.)
-                                          (transit/reader :json)
-                                          (transit/read)
-                                          (handle-client-action))))))
+                                      (let [data (-> data
+                                                     (.getBytes "UTF-8")
+                                                     (ByteArrayInputStream.)
+                                                     (transit/reader :json)
+                                                     (transit/read))
+                                            player-id (get-player-id channel)]
+                                        (when player-id
+                                          (handle-client-action data player-id)))))))
 
 ;; Starting & Stopping
 

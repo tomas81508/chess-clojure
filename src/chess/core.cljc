@@ -8,7 +8,8 @@
   (:require [chess.state :as s]
             [chess.interop :as i]))
 
-(defn create-classic-game-state []
+(defn create-classic-game-state
+  []
   (s/create-state "rnbqkbnr"
                   "pppppppp"
                   "........"
